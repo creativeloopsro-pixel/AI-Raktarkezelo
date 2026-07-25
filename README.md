@@ -6,8 +6,8 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.4.0` - VRP2 eladási riportok ellenőrzött, ütemezhető
-készletkönyvelése.
+`0.5.0` - biztonságos e-mailes dokumentumbeérkezés webhook és opcionális IMAP
+csatornával.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
@@ -22,6 +22,11 @@ kiszűri a fájl- és tartalmi duplikációkat, blokkolja az átfedő időszakok
 megjegyzi a jóváhagyott termék- és egységkonverziókat, majd kézzel vagy
 napi/heti/havi rendben könyveli az értékesítést. Az adminisztrátor az egész
 importot ellenmozgásokkal, auditáltan vissza is fordíthatja.
+Az e-mail modul szervezetenként külön, nem kitalálható dokumentumcímet ad,
+ellenőrzi az inbound webhook HMAC-aláírását, feladó-domain szabályokat alkalmaz,
+majd a PDF- és képmellékleteket ugyanabba a vírus-, MIME-, hash- és AI-folyamatba
+irányítja, mint a kézi feltöltés. Az üzenet- és dokumentumszintű
+duplikációvédelem, az audit és a kézi ellenőrzési sor e-mailnél is kötelező.
 
 ## Gyors indítás Dockerrel
 
@@ -75,8 +80,9 @@ Az AI alapértelmezetten le van tiltva. Ollama Cloud használatához állítsd b
 `APP_AI_PROVIDER=ollama` és `APP_OLLAMA_API_KEY` változókat. Helyi Ollama
 használatakor az `APP_OLLAMA_BASE_URL` értéke például
 `http://host.docker.internal:11434`, az API-kulcs pedig üres lehet. A háttér
-worker Docker Compose alatt automatikusan indítja az AI-jobok helyreállítását
-és a VRP-ütemezőt is. Helyi teljes worker:
+worker Docker Compose alatt automatikusan indítja az AI-jobok helyreállítását,
+a VRP-ütemezőt és - engedélyezés esetén - az IMAP lekérdezést is. Helyi teljes
+worker:
 
 ```powershell
 cd backend
@@ -90,6 +96,36 @@ Egyetlen esedékes AI-dokumentum helyi feldolgozása:
 cd backend
 .\.venv\Scripts\python.exe -m app.worker --once
 ```
+
+## E-mailes dokumentumbeérkezés
+
+A felületen az **E-mail postafiók** menüpont mutatja az adott szervezet
+`documents+<titkos-token>@<domain>` címét, a feladói engedélylistát és a
+beérkezési naplót. A cím domainjét az `APP_EMAIL_INBOUND_DOMAIN` adja; ehhez a
+telepítésben MX vagy inbound-mail szolgáltatói útvonal szükséges.
+
+A generikus webhook a teljes nyers RFC 822 levelet fogadja:
+
+```text
+POST /api/v1/email/inbound
+Content-Type: message/rfc822
+X-Inbound-Timestamp: <Unix timestamp>
+X-Inbound-Signature: sha256=<hex HMAC>
+X-Inbound-Provider: <provider név>
+X-Provider-Message-ID: <provider oldali egyedi azonosító>
+```
+
+Az aláírandó bájtsor a timestamp ASCII alakja, egy pont, majd a változatlan
+nyers levél (`<timestamp>.<raw-message>`); a kulcs az
+`APP_EMAIL_WEBHOOK_SECRET`. Az alapértelmezett elfogadási időablak 300
+másodperc. Üres webhook-titoknál a végpont zárva marad.
+
+Opcionális közös IMAP postafiókhoz állítsd be az
+`APP_EMAIL_IMAP_ENABLED=true`, `APP_EMAIL_IMAP_HOST`,
+`APP_EMAIL_IMAP_USERNAME` és `APP_EMAIL_IMAP_PASSWORD` értékeket. A worker
+`BODY.PEEK[]` lekéréssel dolgozik, és egy levelet csak a tartós adatbázisba
+írás után jelöl olvasottnak. A címzett plus-címzési tokenje választja ki a
+szervezetet.
 
 ## VRP2 riportformátum
 
@@ -128,4 +164,4 @@ npm run build
 - Minden átadott fejlesztési kör külön verziót kap.
 - A gyökér `VERSION`, a backend és a frontend verziója együtt változik.
 - Minden kiadás bekerül a `CHANGELOG.md` fájlba.
-- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.4.0`.
+- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.5.0`.

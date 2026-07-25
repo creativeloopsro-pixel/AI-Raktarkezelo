@@ -1,11 +1,11 @@
 # Megvalósítási térkép
 
-## 0.4.0 hatókör
+## 0.5.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
 és a negyedik fázis Ollama AI-folyamatát, továbbá az ötödik fázis
-VRP-importját fedi le.
+VRP-importját és a hatodik fázis e-mailes beérkeztetési csatornáját fedi le.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -32,6 +32,13 @@ VRP-importját fedi le.
 | VRP inventory | Közös batch source ID, tételenkénti idempotencia, tranzakciós könyvelés |
 | VRP reversal | Adminisztrátori ellenmozgások, audit és nettó nulla készlethatás |
 | VRP PWA | Feltöltés, importlista, tételes megfeleltetés, ütemezés és visszafordítás |
+| E-mail routing | Szervezetenkénti titkos plus-címzés, engedélyezés és címrotáció |
+| Inbound webhook | Nyers RFC 822 fogadás, HMAC-aláírás, időablakos replay-védelem |
+| IMAP intake | Opcionális SSL/TLS worker, tartós átvétel előtti olvasatlanság |
+| Attachment extraction | MIME-részek kinyerése, darab-/méretlimit és feladó-domain szabály |
+| E-mail deduplikáció | Provider üzenetazonosító és dokumentum SHA-256 szerinti idempotencia |
+| E-mail automation | Ellenőrzött melléklet automatikus dokumentum- és AI-sorba állítása |
+| E-mail audit/PWA | Üzenet- és mellékletnapló, review feladat, reszponzív kezelőfelület |
 
 ## Modulhatárok
 
@@ -44,5 +51,5 @@ VRP-importját fedi le.
 
 ## Következő tervezett kiadás
 
-`0.5.0`: dokumentáció szerinti e-mailes beérkeztetési csatorna, biztonságos
-csatolmányfeldolgozás és a meglévő dokumentum/VRP folyamatokhoz irányítás.
+`0.6.0`: dokumentáció szerinti plugin SDK, manifest- és
+jogosultságszerződés, tartós esemény-dispatcher és működő mintaplugin.

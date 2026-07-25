@@ -56,6 +56,19 @@ class Settings(BaseSettings):
     vrp_max_upload_mb: int = 15
     vrp_max_rows: int = 10000
     vrp_scheduler_poll_seconds: int = 30
+    email_inbound_domain: str = "inbound.localhost"
+    email_webhook_secret: SecretStr = SecretStr("")
+    email_webhook_max_age_seconds: int = 300
+    email_max_message_mb: int = 30
+    email_max_attachments: int = 20
+    email_imap_enabled: bool = False
+    email_imap_host: str = ""
+    email_imap_port: int = 993
+    email_imap_username: str = ""
+    email_imap_password: SecretStr = SecretStr("")
+    email_imap_mailbox: str = "INBOX"
+    email_imap_use_ssl: bool = True
+    email_imap_poll_seconds: int = 60
 
     @property
     def cors_origin_list(self) -> list[str]:

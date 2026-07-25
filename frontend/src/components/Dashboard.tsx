@@ -14,6 +14,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Mail,
   PackagePlus,
   Search,
   Settings,
@@ -24,6 +25,7 @@ import { getProducts, getStock } from "../lib/api";
 import type { Session } from "../types";
 import DocumentsPage from "./DocumentsPage";
 import DocumentUploadDialog from "./DocumentUploadDialog";
+import EmailIntakePage from "./EmailIntakePage";
 import ProductDialog from "./ProductDialog";
 import ReceiptReviewPage from "./ReceiptReviewPage";
 import ReviewTasksPage from "./ReviewTasksPage";
@@ -35,7 +37,13 @@ type Props = {
   onLogout: () => void;
 };
 
-type WorkspaceView = "overview" | "documents" | "reviews" | "receipt" | "vrp";
+type WorkspaceView =
+  | "overview"
+  | "documents"
+  | "reviews"
+  | "receipt"
+  | "vrp"
+  | "email";
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
@@ -86,7 +94,7 @@ export default function Dashboard({ session, onLogout }: Props) {
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.4.0</span>
+            <span>verzió 0.5.0</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
@@ -139,6 +147,13 @@ export default function Dashboard({ session, onLogout }: Props) {
           >
             <FileSpreadsheet aria-hidden="true" />
             VRP-import
+          </button>
+          <button
+            className={`nav-item ${activeView === "email" ? "active" : ""}`}
+            onClick={() => setActiveView("email")}
+          >
+            <Mail aria-hidden="true" />
+            E-mail postafiók
           </button>
         </nav>
         <div className="sidebar-footer">
@@ -200,6 +215,8 @@ export default function Dashboard({ session, onLogout }: Props) {
               setActiveView("reviews");
             }}
           />
+        ) : activeView === "email" ? (
+          <EmailIntakePage role={session.user.role} />
         ) : (
           <>
             <header className="workspace-header">
@@ -386,7 +403,7 @@ export default function Dashboard({ session, onLogout }: Props) {
         )}
       </main>
 
-      <nav className="mobile-actions five" aria-label="Mobil gyorsműveletek">
+      <nav className="mobile-actions six" aria-label="Mobil gyorsműveletek">
         <button
           className={activeView === "overview" ? "accent" : ""}
           onClick={() => setActiveView("overview")}
@@ -404,6 +421,13 @@ export default function Dashboard({ session, onLogout }: Props) {
         >
           <FileText aria-hidden="true" />
           Iratok
+        </button>
+        <button
+          className={activeView === "email" ? "accent" : ""}
+          onClick={() => setActiveView("email")}
+        >
+          <Mail aria-hidden="true" />
+          E-mail
         </button>
         <button
           className={activeView === "vrp" ? "accent" : ""}

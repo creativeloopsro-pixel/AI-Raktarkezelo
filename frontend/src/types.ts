@@ -258,3 +258,55 @@ export type VrpScheduleUpdate = Pick<
   | "negative_stock_policy"
   | "overlap_policy"
 >;
+
+export type EmailInboundSettings = {
+  organization_id: string;
+  inbound_address: string;
+  enabled: boolean;
+  auto_process: boolean;
+  allowed_sender_domains: string[];
+  webhook_configured: boolean;
+  imap_enabled: boolean;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmailInboundSettingsUpdate = Pick<
+  EmailInboundSettings,
+  "enabled" | "auto_process" | "allowed_sender_domains"
+>;
+
+export type InboundEmailAttachment = {
+  id: string;
+  position: number;
+  filename: string;
+  declared_content_type: string | null;
+  size_bytes: number;
+  content_sha256: string;
+  status: string;
+  document_id: string | null;
+  rejection_code: string | null;
+  created_at: string;
+};
+
+export type InboundEmail = {
+  id: string;
+  organization_id: string;
+  provider: string;
+  provider_message_id: string;
+  sender: string;
+  recipients: string[];
+  subject: string;
+  status: string;
+  attachment_count: number;
+  accepted_count: number;
+  duplicate_count: number;
+  rejected_count: number;
+  error_summary: { codes?: string[] };
+  received_at: string;
+  processed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  attachments: InboundEmailAttachment[];
+};

@@ -112,17 +112,37 @@ class DocumentService:
         self.scanner = scanner or get_virus_scanner()
         self.settings = settings or get_settings()
 
+    @staticmethod
+    def _actor(
+        user: User | None,
+        organization_id: str | None,
+        actor_id: str | None,
+    ) -> tuple[str, str | None]:
+        if user is not None:
+            if organization_id is not None and organization_id != user.organization_id:
+                raise ValueError("A felhasználó nem a megadott szervezethez tartozik.")
+            return user.organization_id, user.id
+        if organization_id is None:
+            raise ValueError("A szervezetazonosító kötelező rendszerfolyamatnál.")
+        return organization_id, actor_id
+
     def ingest(
         self,
         *,
-        user: User,
+        user: User | None = None,
+        organization_id: str | None = None,
+        actor_id: str | None = None,
         stream: BinaryIO,
         filename: str,
         declared_content_type: str | None,
         document_type: str = "goods_receipt",
         source_type: str = "WEB_UPLOAD",
         correlation_id: str,
+        source_metadata: dict[str, str | int | bool | None] | None = None,
     ) -> Document:
+        resolved_organization_id, resolved_actor_id = self._actor(
+            user, organization_id, actor_id
+        )
         safe_filename = Path(filename or "document").name[:255]
         max_bytes = self.settings.max_upload_mb * 1024 * 1024
         stored = False
@@ -146,7 +166,7 @@ class DocumentService:
             digest = file_hash.hexdigest()
             duplicate = self.session.scalar(
                 select(Document).where(
-                    Document.organization_id == user.organization_id,
+                    Document.organization_id == resolved_organization_id,
                     Document.sha256_hash == digest,
                 )
             )
@@ -156,7 +176,9 @@ class DocumentService:
             validation = self._validate(temporary_path, declared_content_type)
             document_id = new_id()
             extension = ALLOWED_CONTENT_TYPES[validation.content_type]
-            object_key = f"{user.organization_id}/{document_id}/{digest[:20]}.{extension}"
+            object_key = (
+                f"{resolved_organization_id}/{document_id}/{digest[:20]}.{extension}"
+            )
 
             try:
                 self.storage.put_file(temporary_path, object_key, validation.content_type)
@@ -164,7 +186,7 @@ class DocumentService:
                 status = "NEEDS_REVIEW" if validation.issues else "UPLOADED"
                 document = Document(
                     id=document_id,
-                    organization_id=user.organization_id,
+                    organization_id=resolved_organization_id,
                     original_filename=safe_filename,
                     content_type=validation.content_type,
                     size_bytes=total_bytes,
@@ -178,8 +200,9 @@ class DocumentService:
                         "issues": validation.issues,
                         "virus_scan": validation.virus_scan,
                         "declared_content_type": declared_content_type,
+                        **(source_metadata or {}),
                     },
-                    uploaded_by=user.id,
+                    uploaded_by=resolved_actor_id,
                 )
                 self.session.add(document)
                 for page_number in range(
@@ -187,7 +210,7 @@ class DocumentService:
                 ):
                     self.session.add(
                         DocumentPage(
-                            organization_id=user.organization_id,
+                            organization_id=resolved_organization_id,
                             document_id=document_id,
                             page_number=page_number,
                         )
@@ -196,7 +219,7 @@ class DocumentService:
                 if validation.issues:
                     self.session.add(
                         ReviewTask(
-                            organization_id=user.organization_id,
+                            organization_id=resolved_organization_id,
                             task_type="DOCUMENT_VALIDATION",
                             entity_type="document",
                             entity_id=document_id,
@@ -210,8 +233,8 @@ class DocumentService:
 
                 self.session.add(
                     AuditLog(
-                        organization_id=user.organization_id,
-                        actor_id=user.id,
+                        organization_id=resolved_organization_id,
+                        actor_id=resolved_actor_id,
                         action="documents.uploaded",
                         entity_type="document",
                         entity_id=document_id,
@@ -226,7 +249,7 @@ class DocumentService:
                 )
                 self.session.add(
                     OutboxEvent(
-                        organization_id=user.organization_id,
+                        organization_id=resolved_organization_id,
                         event_type="document.uploaded",
                         aggregate_type="document",
                         aggregate_id=document_id,
@@ -250,14 +273,19 @@ class DocumentService:
     def queue_processing(
         self,
         *,
-        user: User,
+        user: User | None = None,
+        organization_id: str | None = None,
+        actor_id: str | None = None,
         document_id: str,
         idempotency_key: str,
         correlation_id: str,
     ) -> ProcessingJobResult:
+        resolved_organization_id, resolved_actor_id = self._actor(
+            user, organization_id, actor_id
+        )
         duplicate = self.session.scalar(
             select(DocumentProcessingJob).where(
-                DocumentProcessingJob.organization_id == user.organization_id,
+                DocumentProcessingJob.organization_id == resolved_organization_id,
                 DocumentProcessingJob.idempotency_key == idempotency_key,
             )
         )
@@ -268,7 +296,7 @@ class DocumentService:
             select(Document)
             .where(
                 Document.id == document_id,
-                Document.organization_id == user.organization_id,
+                Document.organization_id == resolved_organization_id,
             )
             .with_for_update()
         )
@@ -278,7 +306,7 @@ class DocumentService:
         if document.status == "NEEDS_REVIEW":
             retry_review = self.session.scalar(
                 select(ReviewTask).where(
-                    ReviewTask.organization_id == user.organization_id,
+                    ReviewTask.organization_id == resolved_organization_id,
                     ReviewTask.entity_type == "document",
                     ReviewTask.entity_id == document.id,
                     ReviewTask.task_type == "AI_PROCESSING_FAILURE",
@@ -291,7 +319,7 @@ class DocumentService:
             raise DocumentNotProcessableError
 
         job = DocumentProcessingJob(
-            organization_id=user.organization_id,
+            organization_id=resolved_organization_id,
             document_id=document.id,
             idempotency_key=idempotency_key,
             job_type="AI_EXTRACTION",
@@ -300,15 +328,15 @@ class DocumentService:
         document.status = "QUEUED"
         if retry_review is not None:
             retry_review.status = "RESOLVED"
-            retry_review.resolved_by = user.id
+            retry_review.resolved_by = resolved_actor_id
             retry_review.resolution_note = "Az AI-feldolgozás kézzel újra sorba állítva."
             retry_review.resolved_at = utc_now()
         self.session.add(job)
         self.session.flush()
         self.session.add(
             AuditLog(
-                organization_id=user.organization_id,
-                actor_id=user.id,
+                organization_id=resolved_organization_id,
+                actor_id=resolved_actor_id,
                 action="documents.processing_queued",
                 entity_type="document",
                 entity_id=document.id,
@@ -318,7 +346,7 @@ class DocumentService:
         )
         self.session.add(
             OutboxEvent(
-                organization_id=user.organization_id,
+                organization_id=resolved_organization_id,
                 event_type="document.processing.requested",
                 aggregate_type="document",
                 aggregate_id=document.id,

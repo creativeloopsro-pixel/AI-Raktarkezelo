@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
+from secrets import token_hex
 from typing import Any
 from uuid import uuid4
 
@@ -29,6 +30,10 @@ def new_id() -> str:
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def new_routing_token() -> str:
+    return token_hex(12)
 
 
 class Organization(Base):
@@ -263,6 +268,106 @@ class DocumentPage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     document: Mapped[Document] = relationship(back_populates="pages")
+
+
+class EmailInboundSettings(Base):
+    __tablename__ = "email_inbound_settings"
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True
+    )
+    routing_token: Mapped[str] = mapped_column(
+        String(48), unique=True, index=True, default=new_routing_token
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    auto_process: Mapped[bool] = mapped_column(Boolean, default=True)
+    allowed_sender_domains: Mapped[list[str]] = mapped_column(JSON, default=list)
+    updated_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class InboundEmail(Base):
+    __tablename__ = "inbound_emails"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "provider",
+            "provider_message_id",
+            name="uq_inbound_email_org_provider_message",
+        ),
+        Index(
+            "ix_inbound_email_org_status_received",
+            "organization_id",
+            "status",
+            "received_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(40))
+    provider_message_id: Mapped[str] = mapped_column(String(255))
+    sender: Mapped[str] = mapped_column(String(254))
+    recipients: Mapped[list[str]] = mapped_column(JSON, default=list)
+    subject: Mapped[str] = mapped_column(String(500), default="")
+    status: Mapped[str] = mapped_column(String(32), default="PROCESSING")
+    attachment_count: Mapped[int] = mapped_column(default=0)
+    accepted_count: Mapped[int] = mapped_column(default=0)
+    duplicate_count: Mapped[int] = mapped_column(default=0)
+    rejected_count: Mapped[int] = mapped_column(default=0)
+    error_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    processed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    attachments: Mapped[list[InboundEmailAttachment]] = relationship(
+        back_populates="email",
+        cascade="all, delete-orphan",
+        order_by="InboundEmailAttachment.position",
+    )
+
+
+class InboundEmailAttachment(Base):
+    __tablename__ = "inbound_email_attachments"
+    __table_args__ = (
+        UniqueConstraint("email_id", "position", name="uq_inbound_attachment_position"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    email_id: Mapped[str] = mapped_column(
+        ForeignKey("inbound_emails.id", ondelete="CASCADE"), index=True
+    )
+    position: Mapped[int]
+    filename: Mapped[str] = mapped_column(String(255))
+    declared_content_type: Mapped[str | None] = mapped_column(
+        String(120), nullable=True
+    )
+    size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    content_sha256: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(32))
+    document_id: Mapped[str | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    rejection_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    email: Mapped[InboundEmail] = relationship(back_populates="attachments")
+    document: Mapped[Document | None] = relationship()
 
 
 class DocumentProcessingJob(Base):

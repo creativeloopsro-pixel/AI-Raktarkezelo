@@ -2,7 +2,7 @@ from sqlalchemy import select
 
 from app.config import get_settings
 from app.database import SessionLocal
-from app.models import Organization, User
+from app.models import EmailInboundSettings, Organization, User
 from app.security import hash_password
 
 
@@ -36,6 +36,9 @@ def bootstrap() -> None:
                     role="admin",
                 )
             )
+        inbound = session.get(EmailInboundSettings, organization.id)
+        if inbound is None:
+            session.add(EmailInboundSettings(organization_id=organization.id))
 
 
 if __name__ == "__main__":

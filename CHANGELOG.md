@@ -4,6 +4,43 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.5.0] - 2026-07-25
+
+### Hozzáadva
+
+- Szervezetenkénti, kriptográfiailag véletlen plus-címzésű dokumentum-postafiók
+  engedélyezéssel, címrotációval és feladói domainlistával.
+- Nyers RFC 822 levelet fogadó generikus inbound webhook HMAC-SHA256
+  aláírás-ellenőrzéssel és konfigurálható replay-időablakkal.
+- MIME-alapú csatolmánykinyerés, darab- és teljes levélméret-korlát, biztonságos
+  fájlnévkezelés és a meglévő magic-byte/ClamAV dokumentumellenőrzés használata.
+- Provider üzenetazonosító szerinti e-mail-idempotencia, valamint a meglévő
+  szervezetenkénti dokumentumhash-duplikációvédelem.
+- Ellenőrzött PDF/JPG/PNG/TIFF mellékletek automatikus, tartós AI-feldolgozási
+  sorba állítása rendszerfolyamatként, hamis felhasználói attribúció nélkül.
+- Opcionális SSL/TLS IMAP worker `BODY.PEEK[]` lekéréssel; a levél csak sikeres
+  tartós átvétel után kap `Seen` jelölést.
+- Üzenet-, melléklet-, elfogadási, duplikációs és elutasítási adatmodell,
+  auditnapló, outbox esemény és hibánál manuális review feladat.
+- Reszponzív e-mail munkafelület címmásolással, szabálykezeléssel, biztonsági
+  állapotokkal, összesítéssel és automatikusan frissülő beérkezési naplóval.
+- Ötödik Alembic-migráció, webhook-, idempotencia-, feladóvédelem-, API- és
+  IMAP worker tesztek.
+- Élő `docs/REMAINING.md` hiánylista, amelyből csak teljesen implementált és
+  ellenőrzött architektúra-tételek kerülnek le.
+
+### Biztonság
+
+- Üres webhook-titoknál az inbound végpont zárva marad; hibás vagy lejárt
+  aláírású kérés nem jut el a MIME-feldolgozásig.
+- A feladó-domain korlátozás a fájl tárolása előtt érvényesül, az elutasítás
+  pedig auditálható review feladatot hoz létre.
+- Az e-mail törzse nem kerül AI-utasításként feldolgozásra; kizárólag a
+  támogatott, tartalom alapján ellenőrzött mellékletek kerülhetnek a
+  dokumentumpipeline-ba.
+- Ismételt webhook-, IMAP- vagy dokumentumkézbesítés nem hoz létre ismételt
+  készletfeldolgozást.
+
 ## [0.4.0] - 2026-07-25
 
 ### Hozzáadva

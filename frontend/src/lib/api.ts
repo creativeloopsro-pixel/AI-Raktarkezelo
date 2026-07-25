@@ -1,6 +1,9 @@
 import type {
   DocumentItem,
+  EmailInboundSettings,
+  EmailInboundSettingsUpdate,
   GoodsReceiptDraft,
+  InboundEmail,
   Product,
   ProductCreate,
   ReviewTask,
@@ -358,4 +361,27 @@ export function updateVrpSchedule(
     method: "PUT",
     body: JSON.stringify(payload)
   });
+}
+
+export function getEmailSettings(): Promise<EmailInboundSettings> {
+  return request<EmailInboundSettings>("/email/settings");
+}
+
+export function updateEmailSettings(
+  payload: EmailInboundSettingsUpdate
+): Promise<EmailInboundSettings> {
+  return request<EmailInboundSettings>("/email/settings", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function rotateEmailAddress(): Promise<EmailInboundSettings> {
+  return request<EmailInboundSettings>("/email/settings/rotate-address", {
+    method: "POST"
+  });
+}
+
+export function getInboundEmails(): Promise<InboundEmail[]> {
+  return request<InboundEmail[]>("/email/messages");
 }

@@ -369,3 +369,62 @@ class VrpScheduleRead(ApiModel):
     last_run_at: datetime | None
     updated_by: str | None
     updated_at: datetime
+
+
+class EmailInboundSettingsUpdate(BaseModel):
+    enabled: bool = True
+    auto_process: bool = True
+    allowed_sender_domains: list[str] = Field(default_factory=list, max_length=100)
+
+
+class EmailInboundSettingsRead(ApiModel):
+    organization_id: str
+    inbound_address: str
+    enabled: bool
+    auto_process: bool
+    allowed_sender_domains: list[str]
+    webhook_configured: bool
+    imap_enabled: bool
+    updated_by: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class InboundEmailAttachmentRead(ApiModel):
+    id: str
+    position: int
+    filename: str
+    declared_content_type: str | None
+    size_bytes: int
+    content_sha256: str
+    status: str
+    document_id: str | None
+    rejection_code: str | None
+    created_at: datetime
+
+
+class InboundEmailRead(ApiModel):
+    id: str
+    organization_id: str
+    provider: str
+    provider_message_id: str
+    sender: str
+    recipients: list[str]
+    subject: str
+    status: str
+    attachment_count: int
+    accepted_count: int
+    duplicate_count: int
+    rejected_count: int
+    error_summary: dict
+    received_at: datetime
+    processed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    attachments: list[InboundEmailAttachmentRead]
+
+
+class InboundEmailReceipt(BaseModel):
+    message: InboundEmailRead
+    duplicate: bool
+    queued_job_count: int

@@ -10,6 +10,7 @@ from sqlalchemy import or_, select
 
 from app.config import get_settings
 from app.database import SessionLocal
+from app.email_imap import poll_imap_once
 from app.models import (
     Document,
     DocumentProcessingJob,
@@ -186,3 +187,17 @@ def run_vrp_scheduler() -> None:
     run_vrp_scheduler.send_with_options(
         delay=max(settings.vrp_scheduler_poll_seconds, 1) * 1000
     )
+
+
+@dramatiq.actor(max_retries=0)
+def poll_inbound_email() -> None:
+    if not settings.email_imap_enabled:
+        return
+    try:
+        poll_imap_once(settings=settings)
+    except Exception:
+        logger.exception("Az IMAP e-mail worker futása sikertelen.")
+    finally:
+        poll_inbound_email.send_with_options(
+            delay=max(settings.email_imap_poll_seconds, 5) * 1000
+        )
