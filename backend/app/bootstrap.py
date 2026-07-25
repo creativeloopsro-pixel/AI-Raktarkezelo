@@ -4,6 +4,7 @@ from app.config import get_settings
 from app.database import SessionLocal
 from app.models import EmailInboundSettings, Organization, User
 from app.security import hash_password
+from app.services.plugins import PluginService
 
 
 def bootstrap() -> None:
@@ -39,6 +40,8 @@ def bootstrap() -> None:
         inbound = session.get(EmailInboundSettings, organization.id)
         if inbound is None:
             session.add(EmailInboundSettings(organization_id=organization.id))
+    with SessionLocal() as session:
+        PluginService(session).ensure_all_builtin_plugins()
 
 
 if __name__ == "__main__":

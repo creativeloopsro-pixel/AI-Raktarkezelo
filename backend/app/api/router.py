@@ -5,6 +5,7 @@ from app.api import (
     documents,
     email_intake,
     goods_receipts,
+    plugins,
     products,
     review_tasks,
     stock,
@@ -22,3 +23,4 @@ api_router.include_router(review_tasks.router)
 api_router.include_router(goods_receipts.router)
 api_router.include_router(vrp.router)
 api_router.include_router(email_intake.router)
+api_router.include_router(plugins.router)

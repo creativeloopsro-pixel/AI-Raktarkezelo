@@ -122,6 +122,34 @@ class StockService:
             },
         )
 
+    def apply_plugin_movement(
+        self,
+        *,
+        user: User,
+        plugin_key: str,
+        product_id: str,
+        quantity_delta: Decimal,
+        source_id: str,
+        idempotency_key: str,
+        correlation_id: str,
+        details: dict | None = None,
+    ) -> StockResult:
+        if user.role != "plugin_service":
+            raise StockError("Pluginmozgást csak plugin szolgáltatásfiók hozhat létre.")
+        if quantity_delta == 0:
+            raise StockError("Nulla készletmozgás nem hozható létre.")
+        return self._apply_delta(
+            user=user,
+            product_id=product_id,
+            quantity_delta=quantity_delta,
+            movement_type="PLUGIN_ADJUSTMENT",
+            source_type="PLUGIN",
+            source_id=source_id,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+            details={"plugin_id": plugin_key, **(details or {})},
+        )
+
     def correct_to(
         self,
         *,

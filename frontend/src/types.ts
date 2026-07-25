@@ -310,3 +310,79 @@ export type InboundEmail = {
   updated_at: string;
   attachments: InboundEmailAttachment[];
 };
+
+export type PluginPermission = {
+  permission: string;
+  granted: boolean;
+  granted_by: string | null;
+  granted_at: string | null;
+};
+
+export type PluginSetting = {
+  key: string;
+  value: unknown;
+  is_secret: boolean;
+  updated_at: string;
+};
+
+export type PluginItem = {
+  id: string;
+  organization_id: string;
+  plugin_key: string;
+  name: string;
+  description: string;
+  status: string;
+  active_version: string;
+  api_version: string;
+  is_builtin: boolean;
+  manifest: {
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    api_version: string;
+    entrypoint: string;
+    permissions: string[];
+    subscribes: string[];
+    emits: string[];
+    settings_schema: {
+      properties?: Record<
+        string,
+        { type?: string; default?: unknown; description?: string }
+      >;
+    };
+  };
+  permissions: PluginPermission[];
+  settings: PluginSetting[];
+  installed_at: string;
+  updated_at: string;
+  enabled_at: string | null;
+  disabled_at: string | null;
+};
+
+export type PluginJob = {
+  id: string;
+  organization_id: string;
+  plugin_id: string;
+  plugin_version: string;
+  event_type: string;
+  aggregate_type: string;
+  aggregate_id: string;
+  status: string;
+  attempts: number;
+  max_attempts: number;
+  result: Record<string, unknown>;
+  error_code: string | null;
+  error_message: string | null;
+  correlation_id: string;
+  next_attempt_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PluginOverview = {
+  plugins: PluginItem[];
+  job_counts: Record<string, number>;
+};

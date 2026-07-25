@@ -428,3 +428,71 @@ class InboundEmailReceipt(BaseModel):
     message: InboundEmailRead
     duplicate: bool
     queued_job_count: int
+
+
+class PluginPermissionRead(ApiModel):
+    permission: str
+    granted: bool
+    granted_by: str | None
+    granted_at: datetime | None
+
+
+class PluginSettingRead(BaseModel):
+    key: str
+    value: object
+    is_secret: bool
+    updated_at: datetime
+
+
+class PluginRead(BaseModel):
+    id: str
+    organization_id: str
+    plugin_key: str
+    name: str
+    description: str
+    status: str
+    active_version: str
+    api_version: str
+    is_builtin: bool
+    manifest: dict
+    permissions: list[PluginPermissionRead]
+    settings: list[PluginSettingRead]
+    installed_at: datetime
+    updated_at: datetime
+    enabled_at: datetime | None
+    disabled_at: datetime | None
+
+
+class PluginPermissionUpdate(BaseModel):
+    granted_permissions: list[str] = Field(default_factory=list, max_length=50)
+
+
+class PluginSettingsUpdate(BaseModel):
+    values: dict[str, object] = Field(default_factory=dict)
+
+
+class PluginJobRead(ApiModel):
+    id: str
+    organization_id: str
+    plugin_id: str
+    plugin_version: str
+    event_type: str
+    aggregate_type: str
+    aggregate_id: str
+    status: str
+    attempts: int
+    max_attempts: int
+    result: dict
+    error_code: str | None
+    error_message: str | None
+    correlation_id: str
+    next_attempt_at: datetime | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PluginOverview(BaseModel):
+    plugins: list[PluginRead]
+    job_counts: dict[str, int]

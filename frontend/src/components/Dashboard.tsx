@@ -16,6 +16,7 @@ import {
   LogOut,
   Mail,
   PackagePlus,
+  Puzzle,
   Search,
   Settings,
   Warehouse
@@ -27,6 +28,7 @@ import DocumentsPage from "./DocumentsPage";
 import DocumentUploadDialog from "./DocumentUploadDialog";
 import EmailIntakePage from "./EmailIntakePage";
 import ProductDialog from "./ProductDialog";
+import PluginsPage from "./PluginsPage";
 import ReceiptReviewPage from "./ReceiptReviewPage";
 import ReviewTasksPage from "./ReviewTasksPage";
 import StockDialog from "./StockDialog";
@@ -43,7 +45,8 @@ type WorkspaceView =
   | "reviews"
   | "receipt"
   | "vrp"
-  | "email";
+  | "email"
+  | "plugins";
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
@@ -94,7 +97,7 @@ export default function Dashboard({ session, onLogout }: Props) {
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.5.0</span>
+            <span>verzió 0.6.0</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
@@ -155,6 +158,15 @@ export default function Dashboard({ session, onLogout }: Props) {
             <Mail aria-hidden="true" />
             E-mail postafiók
           </button>
+          {["admin", "manager"].includes(session.user.role) && (
+            <button
+              className={`nav-item ${activeView === "plugins" ? "active" : ""}`}
+              onClick={() => setActiveView("plugins")}
+            >
+              <Puzzle aria-hidden="true" />
+              Pluginok
+            </button>
+          )}
         </nav>
         <div className="sidebar-footer">
           <button className="nav-item muted" title="Későbbi kiadás">
@@ -217,6 +229,8 @@ export default function Dashboard({ session, onLogout }: Props) {
           />
         ) : activeView === "email" ? (
           <EmailIntakePage role={session.user.role} />
+        ) : activeView === "plugins" ? (
+          <PluginsPage role={session.user.role} />
         ) : (
           <>
             <header className="workspace-header">
@@ -403,7 +417,12 @@ export default function Dashboard({ session, onLogout }: Props) {
         )}
       </main>
 
-      <nav className="mobile-actions six" aria-label="Mobil gyorsműveletek">
+      <nav
+        className={`mobile-actions ${
+          ["admin", "manager"].includes(session.user.role) ? "seven" : "six"
+        }`}
+        aria-label="Mobil gyorsműveletek"
+      >
         <button
           className={activeView === "overview" ? "accent" : ""}
           onClick={() => setActiveView("overview")}
@@ -443,6 +462,15 @@ export default function Dashboard({ session, onLogout }: Props) {
           <PackagePlus aria-hidden="true" />
           Termék
         </button>
+        {["admin", "manager"].includes(session.user.role) && (
+          <button
+            className={activeView === "plugins" ? "accent" : ""}
+            onClick={() => setActiveView("plugins")}
+          >
+            <Puzzle aria-hidden="true" />
+            Plugin
+          </button>
+        )}
       </nav>
 
       <ProductDialog open={productDialog} onOpenChange={setProductDialog} />

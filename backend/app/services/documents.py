@@ -257,6 +257,12 @@ class DocumentService:
                             "document_id": document_id,
                             "document_type": document_type,
                             "status": status,
+                            "source_type": source_type,
+                            "auto_process_requested": bool(
+                                (source_metadata or {}).get(
+                                    "auto_process_requested", False
+                                )
+                            ),
                             "correlation_id": correlation_id,
                         },
                     )

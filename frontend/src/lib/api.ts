@@ -4,6 +4,9 @@ import type {
   EmailInboundSettingsUpdate,
   GoodsReceiptDraft,
   InboundEmail,
+  PluginItem,
+  PluginJob,
+  PluginOverview,
   Product,
   ProductCreate,
   ReviewTask,
@@ -384,4 +387,53 @@ export function rotateEmailAddress(): Promise<EmailInboundSettings> {
 
 export function getInboundEmails(): Promise<InboundEmail[]> {
   return request<InboundEmail[]>("/email/messages");
+}
+
+export function getPlugins(): Promise<PluginOverview> {
+  return request<PluginOverview>("/plugins");
+}
+
+export function getPluginJobs(): Promise<PluginJob[]> {
+  return request<PluginJob[]>("/plugins/jobs");
+}
+
+export function enablePlugin(pluginId: string): Promise<PluginItem> {
+  return request<PluginItem>(`/plugins/${pluginId}/enable`, {
+    method: "POST"
+  });
+}
+
+export function disablePlugin(pluginId: string): Promise<PluginItem> {
+  return request<PluginItem>(`/plugins/${pluginId}/disable`, {
+    method: "POST"
+  });
+}
+
+export function updatePluginPermissions(
+  pluginId: string,
+  grantedPermissions: string[]
+): Promise<PluginItem> {
+  return request<PluginItem>(`/plugins/${pluginId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ granted_permissions: grantedPermissions })
+  });
+}
+
+export function updatePluginSettings(
+  pluginId: string,
+  values: Record<string, unknown>
+): Promise<PluginItem> {
+  return request<PluginItem>(`/plugins/${pluginId}/settings`, {
+    method: "PUT",
+    body: JSON.stringify({ values })
+  });
+}
+
+export function installPlugin(
+  manifest: Record<string, unknown>
+): Promise<PluginItem> {
+  return request<PluginItem>("/plugins/install", {
+    method: "POST",
+    body: JSON.stringify(manifest)
+  });
 }

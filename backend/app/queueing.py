@@ -12,3 +12,14 @@ def dispatch_document_job(job_id: str) -> bool:
         logger.exception("Document job %s remains in the durable queue", job_id)
         return False
     return True
+
+
+def dispatch_plugin_job(job_id: str) -> bool:
+    try:
+        from app.tasks import process_plugin_job
+
+        process_plugin_job.send(job_id)
+    except Exception:
+        logger.exception("Plugin job %s remains in the durable queue", job_id)
+        return False
+    return True

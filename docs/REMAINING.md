@@ -18,14 +18,6 @@ automatizált ellenőrzés is elkészült.
 - Adminisztrátori MFA, helyreállító kódok és munkamenet-védelem.
 - Hatókörhöz kötött, visszavonható API-tokenek.
 
-## Plugin SDK és eseménykezelés
-
-- Plugin manifest, verziózás, telepítési/engedélyezési állapot és konfiguráció.
-- Deklarált jogosultságokkal korlátozott plugin host API.
-- Tartós outbox dispatcher, esemény-előfizetések és idempotens plugin-futtatások.
-- Dokumentált SDK és működő mintaplugin.
-- A VRP- és e-mail-modul átvezetése a közös plugin-szerződésre.
-
 ## Riportok és értesítések
 
 - Napi nem pénzügyi készlet-PDF létrehozása és archiválása.
@@ -43,7 +35,7 @@ automatizált ellenőrzés is elkészült.
 ## Hátralévő minőségbiztosítás
 
 - PostgreSQL-, Redis- és MinIO-integrációs tesztek.
-- API/plugin contract és teljes mobil E2E kódolvasási tesztek.
+- Teljes mobil E2E kódolvasási tesztek.
 - Jogosultsági, webhook-replay, fájlfeltöltési és tenant-isolation biztonsági tesztek.
 - Terheléses, worker-helyreállítási, backup- és restore-próbák.
 

@@ -370,6 +370,197 @@ class InboundEmailAttachment(Base):
     document: Mapped[Document | None] = relationship()
 
 
+class Plugin(Base):
+    __tablename__ = "plugins"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "plugin_key", name="uq_plugin_org_key"
+        ),
+        Index("ix_plugin_org_status", "organization_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    plugin_key: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(String(500), default="")
+    status: Mapped[str] = mapped_column(String(24), default="DISABLED")
+    active_version: Mapped[str] = mapped_column(String(40))
+    is_builtin: Mapped[bool] = mapped_column(Boolean, default=False)
+    service_user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), index=True
+    )
+    installed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    enabled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    disabled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    installed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    versions: Mapped[list[PluginVersion]] = relationship(
+        back_populates="plugin", cascade="all, delete-orphan"
+    )
+    permissions: Mapped[list[PluginPermission]] = relationship(
+        back_populates="plugin", cascade="all, delete-orphan"
+    )
+    settings: Mapped[list[PluginSetting]] = relationship(
+        back_populates="plugin", cascade="all, delete-orphan"
+    )
+    jobs: Mapped[list[PluginJob]] = relationship(back_populates="plugin")
+    service_user: Mapped[User] = relationship(foreign_keys=[service_user_id])
+
+
+class PluginVersion(Base):
+    __tablename__ = "plugin_versions"
+    __table_args__ = (
+        UniqueConstraint("plugin_id", "version", name="uq_plugin_version"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    plugin_id: Mapped[str] = mapped_column(
+        ForeignKey("plugins.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[str] = mapped_column(String(40))
+    api_version: Mapped[str] = mapped_column(String(20))
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSON)
+    installed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    installed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+
+    plugin: Mapped[Plugin] = relationship(back_populates="versions")
+
+
+class PluginPermission(Base):
+    __tablename__ = "plugin_permissions"
+    __table_args__ = (
+        UniqueConstraint(
+            "plugin_id", "permission", name="uq_plugin_permission"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    plugin_id: Mapped[str] = mapped_column(
+        ForeignKey("plugins.id", ondelete="CASCADE"), index=True
+    )
+    permission: Mapped[str] = mapped_column(String(100))
+    granted: Mapped[bool] = mapped_column(Boolean, default=False)
+    granted_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    granted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    plugin: Mapped[Plugin] = relationship(back_populates="permissions")
+
+
+class PluginSetting(Base):
+    __tablename__ = "plugin_settings"
+    __table_args__ = (
+        UniqueConstraint("plugin_id", "setting_key", name="uq_plugin_setting_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    plugin_id: Mapped[str] = mapped_column(
+        ForeignKey("plugins.id", ondelete="CASCADE"), index=True
+    )
+    setting_key: Mapped[str] = mapped_column(String(100))
+    value: Mapped[Any] = mapped_column(JSON)
+    is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    plugin: Mapped[Plugin] = relationship(back_populates="settings")
+
+
+class PluginJob(Base):
+    __tablename__ = "plugin_jobs"
+    __table_args__ = (
+        UniqueConstraint(
+            "plugin_id", "outbox_event_id", name="uq_plugin_job_event"
+        ),
+        UniqueConstraint(
+            "organization_id",
+            "idempotency_key",
+            name="uq_plugin_job_org_idempotency",
+        ),
+        Index(
+            "ix_plugin_job_status_due",
+            "status",
+            "next_attempt_at",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    plugin_id: Mapped[str] = mapped_column(
+        ForeignKey("plugins.id", ondelete="RESTRICT"), index=True
+    )
+    outbox_event_id: Mapped[str] = mapped_column(
+        ForeignKey("outbox_events.id", ondelete="CASCADE"), index=True
+    )
+    plugin_version: Mapped[str] = mapped_column(String(40))
+    event_type: Mapped[str] = mapped_column(String(100))
+    aggregate_type: Mapped[str] = mapped_column(String(80))
+    aggregate_id: Mapped[str] = mapped_column(String(128))
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    attempts: Mapped[int] = mapped_column(default=0)
+    max_attempts: Mapped[int] = mapped_column(default=3)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    result: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    correlation_id: Mapped[str] = mapped_column(String(80), index=True)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    plugin: Mapped[Plugin] = relationship(back_populates="jobs")
+
+
 class DocumentProcessingJob(Base):
     __tablename__ = "document_processing_jobs"
     __table_args__ = (

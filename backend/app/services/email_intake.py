@@ -23,6 +23,7 @@ from app.models import (
     InboundEmail,
     InboundEmailAttachment,
     OutboxEvent,
+    Plugin,
     ReviewTask,
     User,
     utc_now,
@@ -362,20 +363,11 @@ class EmailIntakeService:
                         "sender": sender,
                         "subject": message.subject,
                         "provider": normalized_provider,
+                        "auto_process_requested": inbound.auto_process,
                     },
                 )
                 attachment_status = "ACCEPTED"
                 document_id = document.id
-                if inbound.auto_process and document.status == "UPLOADED":
-                    queued = self.document_service.queue_processing(
-                        organization_id=inbound.organization_id,
-                        actor_id=None,
-                        document_id=document.id,
-                        idempotency_key=f"email:{message.id}:{position}",
-                        correlation_id=correlation_id,
-                    )
-                    if queued.created:
-                        job_ids.append(queued.job.id)
             except DuplicateDocumentError as exc:
                 self.session.rollback()
                 attachment_status = "DUPLICATE"
@@ -434,7 +426,16 @@ class EmailIntakeService:
             raise UnknownInboundRecipientError
         if len(mailboxes) != 1:
             raise AmbiguousInboundRecipientError
-        return mailboxes[0]
+        mailbox = mailboxes[0]
+        plugin = self.session.scalar(
+            select(Plugin).where(
+                Plugin.organization_id == mailbox.organization_id,
+                Plugin.plugin_key == "email-intake",
+            )
+        )
+        if plugin is not None and plugin.status != "ENABLED":
+            raise UnknownInboundRecipientError
+        return mailbox
 
     @staticmethod
     def _recipients(message: EmailMessage) -> list[str]:

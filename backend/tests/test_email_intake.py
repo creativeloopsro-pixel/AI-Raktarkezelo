@@ -165,7 +165,7 @@ def test_email_attachment_is_ingested_queued_audited_and_idempotent(
     assert result.duplicate is False
     assert result.message.status == "PROCESSED"
     assert result.message.accepted_count == 1
-    assert len(result.job_ids) == 1
+    assert result.job_ids == ()
     attachment = result.message.attachments[0]
     assert attachment.status == "ACCEPTED"
     document = session.get(Document, attachment.document_id)
@@ -173,7 +173,7 @@ def test_email_attachment_is_ingested_queued_audited_and_idempotent(
     assert document.source_type == "EMAIL_ATTACHMENT"
     assert document.uploaded_by is None
     assert document.validation_summary["email_id"] == result.message.id
-    assert session.scalar(select(func.count()).select_from(DocumentProcessingJob)) == 1
+    assert session.scalar(select(func.count()).select_from(DocumentProcessingJob)) == 0
     assert session.scalar(
         select(func.count())
         .select_from(AuditLog)
@@ -280,7 +280,7 @@ def test_signed_inbound_api_and_tenant_scoped_message_list(
     )
     assert inbound.status_code == 202
     assert inbound.json()["message"]["accepted_count"] == 1
-    assert inbound.json()["queued_job_count"] == 1
+    assert inbound.json()["queued_job_count"] == 0
 
     unauthorized = client.post(
         "/api/v1/email/inbound",

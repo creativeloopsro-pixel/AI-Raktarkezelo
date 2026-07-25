@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     email_imap_mailbox: str = "INBOX"
     email_imap_use_ssl: bool = True
     email_imap_poll_seconds: int = 60
+    plugin_api_version: str = "1"
+    plugin_job_timeout_seconds: int = 60
+    plugin_max_retries: int = 3
+    plugin_dispatcher_poll_seconds: int = 5
+    plugin_dispatch_batch_size: int = 100
+    plugin_rate_limit_per_minute: int = 120
 
     @property
     def cors_origin_list(self) -> list[str]:

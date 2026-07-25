@@ -1,0 +1,28 @@
+{
+  "id": "product-observer",
+  "name": "Product observer",
+  "description": "Készletváltozást figyelő SDK-minta.",
+  "version": "1.0.0",
+  "api_version": "1",
+  "entrypoint": "product_observer.plugin:register",
+  "permissions": [
+    "products.read",
+    "settings.read"
+  ],
+  "subscribes": [
+    "stock.changed"
+  ],
+  "emits": [
+    "sample.stock.observed"
+  ],
+  "settings_schema": {
+    "type": "object",
+    "properties": {
+      "include_product_name": {
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "additionalProperties": false
+  }
+}

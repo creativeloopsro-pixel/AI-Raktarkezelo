@@ -4,6 +4,44 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.6.0] - 2026-07-25
+
+### Hozzáadva
+
+- Szervezetenként telepített és verziózott Plugin SDK v1 manifest, külön
+  plugin-szolgáltatásfelhasználóval, telepítési és engedélyezési állapottal.
+- Explicit `products`, `documents`, `stock`, `reports`, `notifications` és
+  `settings` jogosultságok; minden host API-hívásnál deklaráció- és
+  engedélyellenőrzéssel.
+- Tenant-határolt `PluginContext` termék-, hozzárendelt dokumentum-,
+  készletmozgás-, saját beállítás- és deklarált eseménykibocsátási felülettel.
+- Tartós outbox dispatcher, Redis/Dramatiq plugin worker, idempotens
+  `plugin_jobs`, timeout, percenkénti futási korlát, újrapróbálás és stale-job
+  helyreállítás.
+- Hibás pluginfutások elkülönítése, végleges hibánál review feladat,
+  auditbejegyzés és `plugin.failed` esemény.
+- Adminisztrátori Pluginok munkafelület manifesttelepítéssel, engedélyezéssel,
+  jogosultság- és beállításkezeléssel, valamint futásnaplóval.
+- Az AI dokumentumfeldolgozás, a VRP-ütemezés és az e-mailes beérkezés
+  átvezetése a közös manifest- és eseményszerződésre.
+- Alapértelmezetten letiltott, ténylegesen futtatható készletfigyelő mintaplugin,
+  teljes SDK-dokumentáció és külön példacsomag.
+- Hatodik Alembic-migráció a pluginok, verziók, jogosultságok, beállítások és
+  futások tartós tábláihoz; manifest-, jogosultság-, idempotencia-, retry-,
+  elkülönítési és API-tesztek.
+
+### Biztonság
+
+- A manifest telepítése nem tölt be tetszőleges Python-kódot; csak a
+  szervercsomaggal kiadott, előre regisztrált handler engedélyezhető.
+- Új vagy frissítéssel bővült jogosultság nincs automatikusan megadva, és a
+  plugin minden szükséges engedély nélkül letiltva marad.
+- Plugin készletet kizárólag a központi `StockService` rétegen, elkülönített
+  szolgáltatásfelhasználóval és idempotenciakulccsal módosíthat.
+- A plugin nem választhat szervezetet, dokumentumból pedig csak az aktuális
+  eseményben hozzárendelt erőforrás metaadatait érheti el.
+- Titkos beállítás értéke az API-ban maszkolva jelenik meg.
+
 ## [0.5.0] - 2026-07-25
 
 ### Hozzáadva

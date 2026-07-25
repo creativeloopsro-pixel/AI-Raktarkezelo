@@ -1,11 +1,13 @@
 # Megvalósítási térkép
 
-## 0.5.0 hatókör
+## 0.6.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
 és a negyedik fázis Ollama AI-folyamatát, továbbá az ötödik fázis
 VRP-importját és a hatodik fázis e-mailes beérkeztetési csatornáját fedi le.
+Ezen felül megvalósítja a hetedik fázis Plugin SDK-ját, közös
+eseményszerződését és adminisztrációs felületét.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -39,6 +41,13 @@ VRP-importját és a hatodik fázis e-mailes beérkeztetési csatornáját fedi 
 | E-mail deduplikáció | Provider üzenetazonosító és dokumentum SHA-256 szerinti idempotencia |
 | E-mail automation | Ellenőrzött melléklet automatikus dokumentum- és AI-sorba állítása |
 | E-mail audit/PWA | Üzenet- és mellékletnapló, review feladat, reszponzív kezelőfelület |
+| Plugin manifest | Szervezetenként telepített és verziózott, szigorúan validált SDK v1 szerződés |
+| Plugin permissions | Explicit, adminisztrátor által kezelt engedélyek és külön szolgáltatásfelhasználó |
+| Plugin host API | Tenant-határolt termék-, dokumentum-, készlet-, beállítás- és eseményfelület |
+| Plugin runtime | Tartós outbox dispatcher, Redis worker, idempotens job, timeout, rate limit és retry |
+| Plugin failure isolation | Végleges hibánál review feladat, audit és `plugin.failed` esemény |
+| Plugin admin PWA | Manifesttelepítés, engedélyezés, jogosultságok, beállítások és futásnapló |
+| Beépített pluginok | AI, VRP és e-mail közös szerződésre vezetve, működő készletfigyelő mintával |
 
 ## Modulhatárok
 
@@ -46,10 +55,13 @@ VRP-importját és a hatodik fázis e-mailes beérkeztetési csatornáját fedi 
 - Készletet kizárólag a `StockService` módosíthat.
 - A `StockService` ugyanabban a tranzakcióban írja a mozgást, az egyenleget,
   az auditbejegyzést és az outbox eseményt.
-- Az AI és a későbbi pluginok nem kapnak közvetlen adatbázis-módosítási jogot.
+- Az AI és a pluginok nem kapnak közvetlen adatbázis-módosítási jogot.
+- A plugin üzleti hozzáférése a manifestben deklarált és külön megadott
+  engedélyekre, a saját szervezetre és az eseményhez rendelt erőforrásra
+  korlátozott.
 - Minden üzleti lekérdezés kötelezően szervezetazonosítóval szűr.
 
 ## Következő tervezett kiadás
 
-`0.6.0`: dokumentáció szerinti plugin SDK, manifest- és
-jogosultságszerződés, tartós esemény-dispatcher és működő mintaplugin.
+`0.7.0`: mobil kamerás EAN/QR-olvasás, offline műveleti sor és dedikált,
+auditált kézi leltármenet.

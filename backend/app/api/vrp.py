@@ -13,9 +13,10 @@ from fastapi import (
     UploadFile,
     status,
 )
+from sqlalchemy import select
 
 from app.dependencies import CurrentUser, DbSession, require_roles
-from app.models import VrpImportBatch, VrpImportSchedule
+from app.models import Plugin, VrpImportBatch, VrpImportSchedule
 from app.schemas import (
     VrpImportBatchRead,
     VrpImportItemUpdate,
@@ -44,6 +45,30 @@ from app.services.vrp_imports import (
 router = APIRouter(prefix="/vrp", tags=["vrp imports"])
 VrpOperator = Annotated[object, Depends(require_roles("admin", "manager"))]
 VrpAdmin = Annotated[object, Depends(require_roles("admin"))]
+
+
+def require_vrp_plugin_enabled(
+    session: DbSession,
+    user: CurrentUser,
+) -> object:
+    plugin = session.scalar(
+        select(Plugin).where(
+            Plugin.organization_id == user.organization_id,
+            Plugin.plugin_key == "vrp-import",
+        )
+    )
+    if plugin is not None and plugin.status != "ENABLED":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "vrp_plugin_disabled",
+                "message": "A VRP plugin jelenleg le van tiltva.",
+            },
+        )
+    return object()
+
+
+VrpPluginEnabled = Annotated[object, Depends(require_vrp_plugin_enabled)]
 
 
 def _correlation_id(value: str | None) -> str:
@@ -153,6 +178,7 @@ def upload_vrp_import(
     session: DbSession,
     user: CurrentUser,
     _: VrpOperator,
+    _plugin: VrpPluginEnabled,
     file: Annotated[UploadFile, File(description="VRP2 Report predaja")],
     period_start: Annotated[date, Form()],
     period_end: Annotated[date, Form()],
@@ -198,6 +224,7 @@ def update_vrp_item(
     session: DbSession,
     user: CurrentUser,
     _: VrpOperator,
+    _plugin: VrpPluginEnabled,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportBatch:
     try:
@@ -223,6 +250,7 @@ def process_vrp_import(
     session: DbSession,
     user: CurrentUser,
     _: VrpOperator,
+    _plugin: VrpPluginEnabled,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportBatch:
     try:
@@ -275,6 +303,7 @@ def update_vrp_schedule(
     session: DbSession,
     user: CurrentUser,
     _: VrpAdmin,
+    _plugin: VrpPluginEnabled,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportSchedule:
     try:

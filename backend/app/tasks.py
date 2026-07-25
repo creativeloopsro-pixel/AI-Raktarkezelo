@@ -14,12 +14,15 @@ from app.email_imap import poll_imap_once
 from app.models import (
     Document,
     DocumentProcessingJob,
+    OutboxEvent,
+    Plugin,
     User,
     VrpImportBatch,
     VrpImportSchedule,
     utc_now,
 )
 from app.services.ai_processing import DocumentAiPipeline
+from app.services.plugin_runtime import PluginRuntime
 from app.services.vrp_imports import (
     VrpImportNotFoundError,
     VrpImportService,
@@ -154,14 +157,41 @@ def run_vrp_scheduler() -> None:
                 "stale_worker_recovered": True,
             }
 
-        due_batch_ids = list(
+        due_batches = list(
             session.scalars(
-                select(VrpImportBatch.id).where(
+                select(VrpImportBatch)
+                .where(
                     VrpImportBatch.status == "SCHEDULED",
                     VrpImportBatch.scheduled_for <= now,
                 )
+                .with_for_update(skip_locked=True)
             )
         )
+        enabled_vrp_organizations = set(
+            session.scalars(
+                select(Plugin.organization_id).where(
+                    Plugin.plugin_key == "vrp-import",
+                    Plugin.status == "ENABLED",
+                )
+            )
+        )
+        for batch in due_batches:
+            if batch.organization_id not in enabled_vrp_organizations:
+                continue
+            batch.scheduled_for = None
+            session.add(
+                OutboxEvent(
+                    organization_id=batch.organization_id,
+                    event_type="schedule.triggered",
+                    aggregate_type="vrp_import_batch",
+                    aggregate_id=batch.id,
+                    payload={
+                        "target_plugin_id": "vrp-import",
+                        "batch_id": batch.id,
+                        "correlation_id": f"vrp-schedule:{uuid4()}",
+                    },
+                )
+            )
         due_schedules = session.scalars(
             select(VrpImportSchedule)
             .where(
@@ -182,8 +212,6 @@ def run_vrp_scheduler() -> None:
                 after=now,
             )
 
-    for batch_id in due_batch_ids:
-        process_vrp_import_batch.send(batch_id)
     run_vrp_scheduler.send_with_options(
         delay=max(settings.vrp_scheduler_poll_seconds, 1) * 1000
     )
@@ -201,3 +229,29 @@ def poll_inbound_email() -> None:
         poll_inbound_email.send_with_options(
             delay=max(settings.email_imap_poll_seconds, 5) * 1000
         )
+
+
+@dramatiq.actor(
+    max_retries=0,
+    time_limit=settings.plugin_job_timeout_seconds * 1000,
+)
+def process_plugin_job(job_id: str) -> None:
+    with SessionLocal() as session:
+        PluginRuntime(session, settings=settings).run_job(job_id)
+
+
+@dramatiq.actor(max_retries=0)
+def run_plugin_dispatcher() -> None:
+    job_ids: set[str] = set()
+    try:
+        with SessionLocal() as session:
+            runtime = PluginRuntime(session, settings=settings)
+            job_ids.update(runtime.create_jobs_from_outbox())
+            job_ids.update(runtime.due_job_ids())
+    except Exception:
+        logger.exception("A plugin outbox dispatcher futása sikertelen.")
+    for job_id in job_ids:
+        process_plugin_job.send(job_id)
+    run_plugin_dispatcher.send_with_options(
+        delay=max(settings.plugin_dispatcher_poll_seconds, 1) * 1000
+    )

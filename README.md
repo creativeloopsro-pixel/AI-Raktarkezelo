@@ -6,8 +6,8 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.5.0` - biztonságos e-mailes dokumentumbeérkezés webhook és opcionális IMAP
-csatornával.
+`0.6.0` - jogosultságalapú Plugin SDK, tartós esemény-dispatcher és
+adminisztrációs munkafelület.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
@@ -27,6 +27,11 @@ ellenőrzi az inbound webhook HMAC-aláírását, feladó-domain szabályokat al
 majd a PDF- és képmellékleteket ugyanabba a vírus-, MIME-, hash- és AI-folyamatba
 irányítja, mint a kézi feltöltés. Az üzenet- és dokumentumszintű
 duplikációvédelem, az audit és a kézi ellenőrzési sor e-mailnél is kötelező.
+Az új Plugin SDK szervezetenként telepített és verziózott manifestet, külön
+szolgáltatásfelhasználót, explicit engedélyeket és idempotens, tartós
+eseményfuttatást biztosít. A beépített AI-, VRP- és e-mail-modul ugyanazt a
+pluginszerződést használja; a mintaplugin és az adminisztrációs felület a
+fejlesztést és az üzemeltetést is támogatja.
 
 ## Gyors indítás Dockerrel
 
@@ -97,6 +102,16 @@ cd backend
 .\.venv\Scripts\python.exe -m app.worker --once
 ```
 
+## Plugin SDK
+
+Az adminisztrátorok a **Pluginok** munkafelületen tekinthetik meg a telepített
+manifesteket, a szükséges engedélyeket, a beállításokat és a tartós futások
+állapotát. Egy külső plugin csak a szerverrel együtt telepített, regisztrált
+handlerrel, minden deklarált jogosultság külön megadása után engedélyezhető.
+
+A manifest, a host API, az eseményszerződés, a hibakezelés és a mintakód teljes
+leírása: [`docs/PLUGIN_SDK.md`](docs/PLUGIN_SDK.md).
+
 ## E-mailes dokumentumbeérkezés
 
 A felületen az **E-mail postafiók** menüpont mutatja az adott szervezet
@@ -164,4 +179,4 @@ npm run build
 - Minden átadott fejlesztési kör külön verziót kap.
 - A gyökér `VERSION`, a backend és a frontend verziója együtt változik.
 - Minden kiadás bekerül a `CHANGELOG.md` fájlba.
-- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.5.0`.
+- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.6.0`.
