@@ -24,6 +24,7 @@ import type { Session } from "../types";
 import DocumentsPage from "./DocumentsPage";
 import DocumentUploadDialog from "./DocumentUploadDialog";
 import ProductDialog from "./ProductDialog";
+import ReceiptReviewPage from "./ReceiptReviewPage";
 import ReviewTasksPage from "./ReviewTasksPage";
 import StockDialog from "./StockDialog";
 
@@ -32,7 +33,7 @@ type Props = {
   onLogout: () => void;
 };
 
-type WorkspaceView = "overview" | "documents" | "reviews";
+type WorkspaceView = "overview" | "documents" | "reviews" | "receipt";
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
@@ -41,6 +42,7 @@ export default function Dashboard({ session, onLogout }: Props) {
   const [search, setSearch] = useState("");
   const [productDialog, setProductDialog] = useState(false);
   const [documentDialog, setDocumentDialog] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [stockMode, setStockMode] = useState<"receive" | "correct" | null>(null);
 
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: getProducts });
@@ -78,7 +80,7 @@ export default function Dashboard({ session, onLogout }: Props) {
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.2.0</span>
+            <span>verzió 0.3.0</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
@@ -104,7 +106,9 @@ export default function Dashboard({ session, onLogout }: Props) {
             Termékek
           </button>
           <button
-            className={`nav-item ${activeView === "documents" ? "active" : ""}`}
+            className={`nav-item ${
+              ["documents", "receipt"].includes(activeView) ? "active" : ""
+            }`}
             onClick={() => setActiveView("documents")}
           >
             <FileText aria-hidden="true" />
@@ -141,9 +145,25 @@ export default function Dashboard({ session, onLogout }: Props) {
           <DocumentsPage
             onUpload={() => setDocumentDialog(true)}
             onOpenReviews={() => setActiveView("reviews")}
+            onOpenReceipt={(documentId) => {
+              setSelectedDocumentId(documentId);
+              setActiveView("receipt");
+            }}
           />
         ) : activeView === "reviews" ? (
-          <ReviewTasksPage onBack={() => setActiveView("documents")} />
+          <ReviewTasksPage
+            onBack={() => setActiveView("documents")}
+            onOpenReceipt={(documentId) => {
+              setSelectedDocumentId(documentId);
+              setActiveView("receipt");
+            }}
+          />
+        ) : activeView === "receipt" && selectedDocumentId ? (
+          <ReceiptReviewPage
+            documentId={selectedDocumentId}
+            products={products}
+            onBack={() => setActiveView("documents")}
+          />
         ) : (
           <>
             <header className="workspace-header">
@@ -343,7 +363,7 @@ export default function Dashboard({ session, onLogout }: Props) {
           Bevétel
         </button>
         <button
-          className={activeView === "documents" ? "accent" : ""}
+          className={["documents", "receipt"].includes(activeView) ? "accent" : ""}
           onClick={() => setActiveView("documents")}
         >
           <FileText aria-hidden="true" />

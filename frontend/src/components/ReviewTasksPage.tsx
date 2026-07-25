@@ -11,21 +11,29 @@ import {
   X
 } from "lucide-react";
 
-import { getReviewTasks, resolveReviewTask } from "../lib/api";
+import { getReviewTasks, queueDocument, resolveReviewTask } from "../lib/api";
 import type { ReviewTask } from "../types";
 
 type Props = {
   onBack: () => void;
+  onOpenReceipt: (documentId: string) => void;
 };
 
 const reasonLabels: Record<string, string> = {
   CORRUPT_DOCUMENT: "A dokumentum sérült vagy nem olvasható",
   PASSWORD_PROTECTED_PDF: "A PDF jelszóval védett",
   MIME_TYPE_MISMATCH: "A fájl típusa eltér a megadott típustól",
-  PAGE_LIMIT_EXCEEDED: "A dokumentum túllépi az oldalszámkorlátot"
+  PAGE_LIMIT_EXCEEDED: "A dokumentum túllépi az oldalszámkorlátot",
+  UNKNOWN_PRODUCT: "A tételhez nincs biztos termékegyezés",
+  UNKNOWN_PACKAGING_UNIT: "A csomagolási egység nem azonosítható",
+  LOW_CONFIDENCE: "Az AI bizonyossága a küszöbérték alatt van",
+  QUANTITY_OUTLIER: "A felismert mennyiség szokatlanul nagy",
+  ai_provider_unavailable: "Az AI-szolgáltató nem érhető el",
+  ai_response_invalid: "Az AI-válasz nem felel meg a kötelező sémának",
+  document_preprocessing_failed: "A dokumentum nem készíthető elő az AI számára"
 };
 
-export default function ReviewTasksPage({ onBack }: Props) {
+export default function ReviewTasksPage({ onBack, onOpenReceipt }: Props) {
   const queryClient = useQueryClient();
   const [selectedTask, setSelectedTask] = useState<ReviewTask | null>(null);
   const [note, setNote] = useState("Kézzel ellenőrizve és elfogadva.");
@@ -43,6 +51,16 @@ export default function ReviewTasksPage({ onBack }: Props) {
         queryClient.invalidateQueries({ queryKey: ["documents"] })
       ]);
       setSelectedTask(null);
+    }
+  });
+  const retryMutation = useMutation({
+    mutationFn: queueDocument,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+        queryClient.invalidateQueries({ queryKey: ["documents"] })
+      ]);
+      onBack();
     }
   });
 
@@ -81,8 +99,8 @@ export default function ReviewTasksPage({ onBack }: Props) {
         {!tasksQuery.isLoading && tasks.length === 0 && (
           <div className="empty-state">
             <CheckCircle2 aria-hidden="true" />
-            <strong>Nincs ellenőrzésre váró dokumentum.</strong>
-            <span>Minden beérkezett fájl megfelelt a validációnak.</span>
+            <strong>Nincs nyitott ellenőrzési feladat.</strong>
+            <span>Minden fájl és kinyert tételsor feldolgozható állapotban van.</span>
           </div>
         )}
         {tasks.map((task, index) => (
@@ -97,19 +115,48 @@ export default function ReviewTasksPage({ onBack }: Props) {
               <FileWarning aria-hidden="true" />
             </span>
             <div className="review-row-main">
-              <span className="review-type">Dokumentumvalidáció</span>
+              <span className="review-type">
+                {task.task_type === "GOODS_RECEIPT_REVIEW"
+                  ? "AI-termékpárosítás"
+                  : task.task_type === "AI_PROCESSING_FAILURE"
+                    ? "AI-feldolgozási hiba"
+                    : "Dokumentumvalidáció"}
+              </span>
               <h3>{task.context.filename ?? "Ismeretlen dokumentum"}</h3>
               <p>{reasonLabels[task.reason_code] ?? task.reason_code}</p>
             </div>
             <div className="review-row-meta">
               <span>{new Date(task.created_at).toLocaleString("hu-HU")}</span>
-              <button className="primary-button" onClick={() => setSelectedTask(task)}>
+              <button
+                className="primary-button"
+                onClick={() => {
+                  if (
+                    task.task_type === "GOODS_RECEIPT_REVIEW" &&
+                    task.context.document_id
+                  ) {
+                    onOpenReceipt(task.context.document_id);
+                  } else if (task.task_type === "DOCUMENT_VALIDATION") {
+                    setSelectedTask(task);
+                  } else if (task.context.document_id) {
+                    retryMutation.mutate(task.context.document_id);
+                  } else {
+                    onBack();
+                  }
+                }}
+              >
                 <ClipboardCheck aria-hidden="true" />
-                Ellenőrzés
+                {task.task_type === "GOODS_RECEIPT_REVIEW"
+                  ? "Tételek"
+                  : task.task_type === "DOCUMENT_VALIDATION"
+                    ? "Ellenőrzés"
+                    : "Újrapróbálás"}
               </button>
             </div>
           </motion.article>
         ))}
+        {retryMutation.error && (
+          <p className="form-error">{retryMutation.error.message}</p>
+        )}
       </section>
 
       <Dialog.Root
@@ -174,4 +221,3 @@ export default function ReviewTasksPage({ onBack }: Props) {
     </motion.div>
   );
 }
-

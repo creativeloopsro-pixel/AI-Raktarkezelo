@@ -1,5 +1,6 @@
 import type {
   DocumentItem,
+  GoodsReceiptDraft,
   Product,
   ProductCreate,
   ReviewTask,
@@ -176,6 +177,33 @@ export function resolveReviewTask(taskId: string, resolutionNote: string): Promi
   return request<ReviewTask>(`/review-tasks/${taskId}/resolve`, {
     method: "POST",
     body: JSON.stringify({ resolution_note: resolutionNote })
+  });
+}
+
+export function getGoodsReceipt(documentId: string): Promise<GoodsReceiptDraft> {
+  return request<GoodsReceiptDraft>(`/goods-receipts/by-document/${documentId}`);
+}
+
+export function updateGoodsReceiptItem(
+  draftId: string,
+  itemId: string,
+  productId: string,
+  packagingUnitId: string | null,
+  quantity: number
+): Promise<GoodsReceiptDraft> {
+  return request<GoodsReceiptDraft>(`/goods-receipts/${draftId}/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      product_id: productId,
+      packaging_unit_id: packagingUnitId,
+      quantity
+    })
+  });
+}
+
+export function confirmGoodsReceipt(draftId: string): Promise<GoodsReceiptDraft> {
+  return request<GoodsReceiptDraft>(`/goods-receipts/${draftId}/confirm`, {
+    method: "POST"
   });
 }
 

@@ -4,6 +4,37 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.3.0] - 2026-07-25
+
+### Hozzáadva
+
+- Ollama Cloud és helyi Ollama végponttal használható, timeouttal és
+  adatbázis-alapú circuit breakerrel védett szerveroldali AI Gateway.
+- Gemma 4 31B multimodális bizonylatkinyerés PDF- és képelőfeldolgozással.
+- Dramatiq + Redis worker, tartós adatbázis-job, exponenciális retry és elakadt
+  feladatok helyreállítása.
+- AI-kérés-, eredmény- és engedélyezett tool-call napló modell-, prompt-,
+  token- és időmetrikákkal.
+- Szigorú Pydantic AI-kimeneti szerződés bizonylatfejhez és tételsorokhoz.
+- Vonalkód-, pontos név- és lexikai termékpárosítás, csomagolási konverzió és
+  mennyiségi üzleti validáció.
+- Bevételezési tervezet, kézi tételpárosítás és reszponzív AI-előnézeti felület.
+- Jóváhagyáskor minden tételt egyetlen tranzakcióban, idempotensen könyvelő
+  dokumentumalapú készletmozgások.
+- Harmadik Alembic-migráció és AI/golden-contract automatizált tesztek.
+- Karcsúsított Docker build context a helyi függőségek és futási
+  melléktermékek kizárásával.
+
+### Biztonság
+
+- A dokumentum képe és szövege nem utasítás; a rendszerprompt minden
+  dokumentumba ágyazott parancs figyelmen kívül hagyását előírja.
+- Az Ollama Cloud natív strukturált kimenetének hiányában minden válasz kötelező
+  szerveroldali sémaellenőrzésen megy át.
+- A modell nem kap adatbázis-, shell-, fájlrendszer- vagy készletmódosító
+  eszközt; készletet továbbra is kizárólag a `StockService` módosít.
+- Hibás vagy ismeretlen AI-kimenet nem hoz létre részleges készletmozgást.
+
 ## [0.2.0] - 2026-07-25
 
 ### Hozzáadva

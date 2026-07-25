@@ -18,10 +18,12 @@ from sqlalchemy import or_, select
 
 from app.dependencies import CurrentUser, DbSession, require_roles
 from app.models import Document
+from app.queueing import dispatch_document_job
 from app.schemas import DocumentProcessingJobRead, DocumentRead
 from app.services.documents import (
     DocumentNeedsReviewError,
     DocumentNotFoundError,
+    DocumentNotProcessableError,
     DocumentService,
     DocumentTooLargeError,
     DuplicateDocumentError,
@@ -89,6 +91,14 @@ def _document_error(exc: Exception) -> HTTPException:
             detail={
                 "code": exc.code,
                 "message": "A dokumentumot feldolgozás előtt ellenőrizni kell.",
+            },
+        )
+    if isinstance(exc, DocumentNotProcessableError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": exc.code,
+                "message": "A dokumentum ebben az állapotban nem indítható újra.",
             },
         )
     return HTTPException(
@@ -162,6 +172,8 @@ def queue_document_processing(
             idempotency_key=idempotency_key,
             correlation_id=_correlation_id(correlation_header),
         )
+        if result.created:
+            dispatch_document_job(result.job.id)
         return result.job
     except Exception as exc:
         session.rollback()

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -168,6 +168,9 @@ class DocumentProcessingJobRead(ApiModel):
     attempts: int
     error_code: str | None
     created_at: datetime
+    started_at: datetime | None
+    next_attempt_at: datetime | None
+    completed_at: datetime | None
 
 
 class ReviewTaskRead(ApiModel):
@@ -188,3 +191,80 @@ class ReviewTaskRead(ApiModel):
 
 class ReviewTaskResolve(BaseModel):
     resolution_note: str = Field(min_length=3, max_length=1000)
+
+
+class AiRequestRead(ApiModel):
+    id: str
+    provider: str
+    model_name: str
+    prompt_version: str
+    status: str
+    duration_ms: int | None
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    error_code: str | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class AiResultRead(ApiModel):
+    id: str
+    overall_confidence: Decimal
+    model_version: str | None
+    created_at: datetime
+    request: AiRequestRead
+
+
+class ReceiptProductSummary(ApiModel):
+    id: str
+    name: str
+    internal_sku: str
+    base_unit: str
+
+
+class ReceiptPackagingSummary(ApiModel):
+    id: str
+    name: str
+    multiplier_to_base_unit: Decimal
+
+
+class GoodsReceiptItemRead(ApiModel):
+    id: str
+    line_number: int
+    description: str
+    barcode: str | None
+    quantity: Decimal
+    unit: str
+    confidence: Decimal
+    source_page: int
+    matched_product_id: str | None
+    packaging_unit_id: str | None
+    conversion_factor: Decimal | None
+    base_quantity: Decimal | None
+    match_method: str | None
+    status: str
+    validation_issues: list[str]
+    matched_product: ReceiptProductSummary | None
+    packaging_unit: ReceiptPackagingSummary | None
+
+
+class GoodsReceiptDraftRead(ApiModel):
+    id: str
+    organization_id: str
+    document_id: str
+    document_number: str | None
+    document_date: date | None
+    status: str
+    validation_issues: list[str]
+    confirmed_by: str | None
+    confirmed_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    ai_result: AiResultRead
+    items: list[GoodsReceiptItemRead]
+
+
+class GoodsReceiptItemUpdate(BaseModel):
+    product_id: str
+    packaging_unit_id: str | None = None
+    quantity: Decimal = Field(gt=0, decimal_places=3)

@@ -6,14 +6,16 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.2.0` - biztonságos dokumentumbeérkeztetés és felülvizsgálati sor.
+`0.3.0` - AI-alapú bizonylatkinyerés, termékpárosítás és jóváhagyás.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
 visszavonást és auditot. Ezek mellett PDF- és képdokumentumok feltöltését,
 tartalomalapú fájlellenőrzését, szervezetenkénti SHA-256 duplikációvédelmét,
 objektumtárolását, feldolgozási sorba állítását és kézi felülvizsgálatát is
-biztosítja egy mobilbarát PWA-felületen.
+biztosítja egy mobilbarát PWA-felületen. Az Ollama/Gemma multimodális pipeline
+kinyeri a bizonylattételeket, belső termékhez és csomagolási egységhez párosítja
+őket, majd ellenőrzött előnézetből, egyetlen tranzakcióban könyveli a készletet.
 
 ## Gyors indítás Dockerrel
 
@@ -63,6 +65,17 @@ MinIO S3-kompatibilis objektumtár használható. A ClamAV-vírusellenőrzés
 környezeti változóval kapcsolható be; bekapcsolt állapotban sikertelen
 ellenőrzés esetén a feltöltés zárt módon elutasításra kerül.
 
+Az AI alapértelmezetten le van tiltva. Ollama Cloud használatához állítsd be az
+`APP_AI_PROVIDER=ollama` és `APP_OLLAMA_API_KEY` változókat. Helyi Ollama
+használatakor az `APP_OLLAMA_BASE_URL` értéke például
+`http://host.docker.internal:11434`, az API-kulcs pedig üres lehet. A háttér
+worker Docker Compose alatt automatikusan indul; helyi egyszeri feldolgozás:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m app.worker --once
+```
+
 ## Minőségellenőrzés
 
 ```powershell
@@ -80,4 +93,4 @@ npm run build
 - Minden átadott fejlesztési kör külön verziót kap.
 - A gyökér `VERSION`, a backend és a frontend verziója együtt változik.
 - Minden kiadás bekerül a `CHANGELOG.md` fájlba.
-- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.2.0`.
+- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.3.0`.

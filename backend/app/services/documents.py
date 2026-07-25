@@ -68,6 +68,10 @@ class DocumentNeedsReviewError(DocumentError):
     code = "document_needs_review"
 
 
+class DocumentNotProcessableError(DocumentError):
+    code = "document_not_processable"
+
+
 class ReviewTaskNotFoundError(DocumentError):
     code = "review_task_not_found"
 
@@ -270,8 +274,21 @@ class DocumentService:
         )
         if document is None:
             raise DocumentNotFoundError
+        retry_review: ReviewTask | None = None
         if document.status == "NEEDS_REVIEW":
-            raise DocumentNeedsReviewError
+            retry_review = self.session.scalar(
+                select(ReviewTask).where(
+                    ReviewTask.organization_id == user.organization_id,
+                    ReviewTask.entity_type == "document",
+                    ReviewTask.entity_id == document.id,
+                    ReviewTask.task_type == "AI_PROCESSING_FAILURE",
+                    ReviewTask.status == "OPEN",
+                )
+            )
+            if retry_review is None:
+                raise DocumentNeedsReviewError
+        elif document.status != "UPLOADED":
+            raise DocumentNotProcessableError
 
         job = DocumentProcessingJob(
             organization_id=user.organization_id,
@@ -281,6 +298,11 @@ class DocumentService:
             status="PENDING",
         )
         document.status = "QUEUED"
+        if retry_review is not None:
+            retry_review.status = "RESOLVED"
+            retry_review.resolved_by = user.id
+            retry_review.resolution_note = "Az AI-feldolgozás kézzel újra sorba állítva."
+            retry_review.resolved_at = utc_now()
         self.session.add(job)
         self.session.flush()
         self.session.add(
@@ -335,7 +357,7 @@ class DocumentService:
         task.resolved_by = user.id
         task.resolution_note = resolution_note
         task.resolved_at = utc_now()
-        if task.entity_type == "document":
+        if task.task_type == "DOCUMENT_VALIDATION" and task.entity_type == "document":
             document = self.session.scalar(
                 select(Document).where(
                     Document.id == task.entity_id,

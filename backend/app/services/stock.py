@@ -70,6 +70,32 @@ class StockService:
             details={"reason": reason} if reason else {},
         )
 
+    def receive_document_item(
+        self,
+        *,
+        user: User,
+        product_id: str,
+        quantity: Decimal,
+        receipt_id: str,
+        receipt_item_id: str,
+        idempotency_key: str,
+        correlation_id: str,
+    ) -> StockResult:
+        return self._apply_delta(
+            user=user,
+            product_id=product_id,
+            quantity_delta=quantity,
+            movement_type="GOODS_RECEIPT",
+            source_type="DOCUMENT_GOODS_RECEIPT",
+            source_id=receipt_id,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+            details={
+                "goods_receipt_id": receipt_id,
+                "goods_receipt_item_id": receipt_item_id,
+            },
+        )
+
     def correct_to(
         self,
         *,

@@ -22,6 +22,7 @@ import {
 type Props = {
   onUpload: () => void;
   onOpenReviews: () => void;
+  onOpenReceipt: (documentId: string) => void;
 };
 
 const statusLabels: Record<string, string> = {
@@ -29,6 +30,8 @@ const statusLabels: Record<string, string> = {
   NEEDS_REVIEW: "Ellenőrzendő",
   QUEUED: "Sorban áll",
   PROCESSING: "Feldolgozás",
+  RETRY: "Újrapróbálás",
+  READY_FOR_CONFIRMATION: "Jóváhagyható",
   COMPLETED: "Kész",
   FAILED: "Hiba"
 };
@@ -49,13 +52,18 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-export default function DocumentsPage({ onUpload, onOpenReviews }: Props) {
+export default function DocumentsPage({
+  onUpload,
+  onOpenReviews,
+  onOpenReceipt
+}: Props) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const documentsQuery = useQuery({
     queryKey: ["documents"],
-    queryFn: getDocuments
+    queryFn: getDocuments,
+    refetchInterval: 5000
   });
   const documents = useMemo(
     () => documentsQuery.data ?? [],
@@ -83,7 +91,7 @@ export default function DocumentsPage({ onUpload, onOpenReviews }: Props) {
     (document) => document.status === "NEEDS_REVIEW"
   ).length;
   const queuedCount = documents.filter((document) =>
-    ["QUEUED", "PROCESSING"].includes(document.status)
+    ["QUEUED", "PROCESSING", "RETRY"].includes(document.status)
   ).length;
   const totalBytes = documents.reduce(
     (sum, document) => sum + document.size_bytes,
@@ -163,6 +171,7 @@ export default function DocumentsPage({ onUpload, onOpenReviews }: Props) {
               <option value="UPLOADED">Feltöltve</option>
               <option value="NEEDS_REVIEW">Ellenőrzendő</option>
               <option value="QUEUED">Sorban áll</option>
+              <option value="READY_FOR_CONFIRMATION">Jóváhagyható</option>
               <option value="COMPLETED">Kész</option>
             </select>
           </div>
@@ -230,7 +239,9 @@ export default function DocumentsPage({ onUpload, onOpenReviews }: Props) {
                       <span className={`document-status ${document.status.toLowerCase()}`}>
                         {document.status === "NEEDS_REVIEW" ? (
                           <AlertTriangle aria-hidden="true" />
-                        ) : document.status === "UPLOADED" ? (
+                        ) : ["UPLOADED", "READY_FOR_CONFIRMATION", "COMPLETED"].includes(
+                            document.status
+                          ) ? (
                           <CheckCircle2 aria-hidden="true" />
                         ) : (
                           <LoaderCircle aria-hidden="true" />
@@ -263,6 +274,14 @@ export default function DocumentsPage({ onUpload, onOpenReviews }: Props) {
                         {document.status === "NEEDS_REVIEW" && (
                           <button className="text-button attention" onClick={onOpenReviews}>
                             Ellenőrzés
+                          </button>
+                        )}
+                        {["READY_FOR_CONFIRMATION", "COMPLETED"].includes(document.status) && (
+                          <button
+                            className="text-button"
+                            onClick={() => onOpenReceipt(document.id)}
+                          >
+                            {document.status === "COMPLETED" ? "Részletek" : "Előnézet"}
                           </button>
                         )}
                       </div>

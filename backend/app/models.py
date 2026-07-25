@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import uuid4
@@ -9,6 +9,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -283,9 +284,172 @@ class DocumentProcessingJob(Base):
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     document: Mapped[Document] = relationship(back_populates="processing_jobs")
+    ai_requests: Mapped[list[AiRequest]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+
+
+class AiRequest(Base):
+    __tablename__ = "ai_requests"
+    __table_args__ = (
+        Index("ix_ai_request_org_status_created", "organization_id", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    job_id: Mapped[str] = mapped_column(
+        ForeignKey("document_processing_jobs.id", ondelete="CASCADE"), index=True
+    )
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(40))
+    model_name: Mapped[str] = mapped_column(String(120))
+    prompt_version: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(32), default="RUNNING")
+    request_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    response_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    duration_ms: Mapped[int | None] = mapped_column(nullable=True)
+    prompt_tokens: Mapped[int | None] = mapped_column(nullable=True)
+    completion_tokens: Mapped[int | None] = mapped_column(nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    job: Mapped[DocumentProcessingJob] = relationship(back_populates="ai_requests")
+    result: Mapped[AiResult | None] = relationship(
+        back_populates="request", cascade="all, delete-orphan"
+    )
+
+
+class AiResult(Base):
+    __tablename__ = "ai_results"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    request_id: Mapped[str] = mapped_column(
+        ForeignKey("ai_requests.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), index=True
+    )
+    normalized_output: Mapped[dict[str, Any]] = mapped_column(JSON)
+    overall_confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4))
+    response_hash: Mapped[str] = mapped_column(String(64))
+    model_version: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    request: Mapped[AiRequest] = relationship(back_populates="result")
+    tool_calls: Mapped[list[AiToolCall]] = relationship(
+        back_populates="result", cascade="all, delete-orphan"
+    )
+    receipt_draft: Mapped[GoodsReceiptDraft | None] = relationship(
+        back_populates="ai_result", cascade="all, delete-orphan"
+    )
+
+
+class AiToolCall(Base):
+    __tablename__ = "ai_tool_calls"
+    __table_args__ = (
+        Index("ix_ai_tool_call_org_created", "organization_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    ai_result_id: Mapped[str] = mapped_column(
+        ForeignKey("ai_results.id", ondelete="CASCADE"), index=True
+    )
+    tool_name: Mapped[str] = mapped_column(String(100))
+    arguments: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    result_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(32), default="COMPLETED")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    result: Mapped[AiResult] = relationship(back_populates="tool_calls")
+
+
+class GoodsReceiptDraft(Base):
+    __tablename__ = "goods_receipt_drafts"
+    __table_args__ = (
+        Index("ix_receipt_draft_org_status_created", "organization_id", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    ai_result_id: Mapped[str] = mapped_column(
+        ForeignKey("ai_results.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    document_number: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    document_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="NEEDS_REVIEW")
+    validation_issues: Mapped[list[str]] = mapped_column(JSON, default=list)
+    confirmed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    ai_result: Mapped[AiResult] = relationship(back_populates="receipt_draft")
+    items: Mapped[list[GoodsReceiptItem]] = relationship(
+        back_populates="draft",
+        cascade="all, delete-orphan",
+        order_by="GoodsReceiptItem.line_number",
+    )
+
+
+class GoodsReceiptItem(Base):
+    __tablename__ = "goods_receipt_items"
+    __table_args__ = (
+        UniqueConstraint("draft_id", "line_number", name="uq_receipt_item_line"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    draft_id: Mapped[str] = mapped_column(
+        ForeignKey("goods_receipt_drafts.id", ondelete="CASCADE"), index=True
+    )
+    line_number: Mapped[int]
+    description: Mapped[str] = mapped_column(String(500))
+    barcode: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    unit: Mapped[str] = mapped_column(String(80))
+    confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4))
+    source_page: Mapped[int]
+    matched_product_id: Mapped[str | None] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    packaging_unit_id: Mapped[str | None] = mapped_column(
+        ForeignKey("packaging_units.id", ondelete="RESTRICT"), nullable=True
+    )
+    conversion_factor: Mapped[Decimal | None] = mapped_column(Numeric(18, 3), nullable=True)
+    base_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 3), nullable=True)
+    match_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="NEEDS_REVIEW")
+    validation_issues: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    draft: Mapped[GoodsReceiptDraft] = relationship(back_populates="items")
+    matched_product: Mapped[Product | None] = relationship()
+    packaging_unit: Mapped[PackagingUnit | None] = relationship()
 
 
 class ReviewTask(Base):

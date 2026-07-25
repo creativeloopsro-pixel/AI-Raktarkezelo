@@ -1,10 +1,10 @@
 # Megvalósítási térkép
 
-## 0.2.0 hatókör
+## 0.3.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
-fedi le.
+és a negyedik fázis Ollama AI-folyamatát fedi le.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -18,6 +18,11 @@ fedi le.
 | Object storage | Helyi fejlesztői tároló és S3/MinIO adapter, backend-proxyzott letöltés |
 | File security | Magic-byte MIME-ellenőrzés, méret- és oldallimit, SHA-256 duplikációvédelem, opcionális ClamAV |
 | Review | Sérült vagy bizonytalan dokumentumok manuális felülvizsgálati sora |
+| AI Gateway | Ollama Cloud/helyi Ollama provider, timeout, circuit breaker, multimodális előfeldolgozás és szigorú Pydantic kimeneti séma |
+| Worker | Dramatiq + Redis dispatch, adatbázisban tartós job, retry és stale-job helyreállítás |
+| AI audit | Modell-, prompt-, token-, idő- és tool-call metaadat minden kinyeréshez |
+| Product matching | Vonalkód, pontos név, lexikai egyezés és csomagolási konverzió |
+| Goods receipt | Ember által javítható tervezet és tranzakciós, idempotens készletkönyvelés |
 
 ## Modulhatárok
 
@@ -30,5 +35,5 @@ fedi le.
 
 ## Következő tervezett kiadás
 
-`0.3.0`: háttér-feldolgozó worker, OCR és a dokumentumokból kinyert mezők
-AI-támogatott javaslatai, kötelező emberi jóváhagyással.
+`0.4.0`: VRP-riportfeltöltés, termék-mapping, napi/heti/havi ütemezés,
+időszakátfedés-védelem és visszavonás.

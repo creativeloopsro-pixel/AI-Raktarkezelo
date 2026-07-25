@@ -100,10 +100,73 @@ export type ReviewTask = {
   context: {
     filename?: string;
     issues?: string[];
+    document_id?: string;
+    draft_id?: string;
   };
   assigned_to: string | null;
   resolved_by: string | null;
   resolution_note: string | null;
   created_at: string;
   resolved_at: string | null;
+};
+
+export type AiRequestMetadata = {
+  id: string;
+  provider: string;
+  model_name: string;
+  prompt_version: string;
+  status: string;
+  duration_ms: number | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  error_code: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type GoodsReceiptItem = {
+  id: string;
+  line_number: number;
+  description: string;
+  barcode: string | null;
+  quantity: string;
+  unit: string;
+  confidence: string;
+  source_page: number;
+  matched_product_id: string | null;
+  packaging_unit_id: string | null;
+  conversion_factor: string | null;
+  base_quantity: string | null;
+  match_method: string | null;
+  status: string;
+  validation_issues: string[];
+  matched_product: {
+    id: string;
+    name: string;
+    internal_sku: string;
+    base_unit: string;
+  } | null;
+  packaging_unit: PackagingUnit | null;
+};
+
+export type GoodsReceiptDraft = {
+  id: string;
+  organization_id: string;
+  document_id: string;
+  document_number: string | null;
+  document_date: string | null;
+  status: string;
+  validation_issues: string[];
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  ai_result: {
+    id: string;
+    overall_confidence: string;
+    model_version: string | null;
+    created_at: string;
+    request: AiRequestMetadata;
+  };
+  items: GoodsReceiptItem[];
 };
