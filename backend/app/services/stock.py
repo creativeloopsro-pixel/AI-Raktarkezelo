@@ -96,6 +96,32 @@ class StockService:
             },
         )
 
+    def issue_vrp_sale_item(
+        self,
+        *,
+        user: User,
+        product_id: str,
+        quantity: Decimal,
+        batch_id: str,
+        batch_item_id: str,
+        idempotency_key: str,
+        correlation_id: str,
+    ) -> StockResult:
+        return self._apply_delta(
+            user=user,
+            product_id=product_id,
+            quantity_delta=-quantity,
+            movement_type="VRP_SALE_IMPORT",
+            source_type="VRP_IMPORT_BATCH",
+            source_id=batch_id,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+            details={
+                "vrp_import_batch_id": batch_id,
+                "vrp_import_item_id": batch_item_id,
+            },
+        )
+
     def correct_to(
         self,
         *,

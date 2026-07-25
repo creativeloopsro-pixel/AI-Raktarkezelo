@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from typing import Any
 from uuid import uuid4
@@ -15,6 +15,7 @@ from sqlalchemy import (
     Index,
     Numeric,
     String,
+    Time,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -96,6 +97,9 @@ class Product(Base):
         back_populates="product", cascade="all, delete-orphan"
     )
     barcodes: Mapped[list[ProductBarcode]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+    external_mappings: Mapped[list[ExternalProductMapping]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
     balance: Mapped[StockBalance | None] = relationship(back_populates="product")
@@ -450,6 +454,217 @@ class GoodsReceiptItem(Base):
     draft: Mapped[GoodsReceiptDraft] = relationship(back_populates="items")
     matched_product: Mapped[Product | None] = relationship()
     packaging_unit: Mapped[PackagingUnit | None] = relationship()
+
+
+class ExternalProductMapping(Base):
+    __tablename__ = "external_product_mappings"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "plugin_id",
+            "external_key",
+            name="uq_external_mapping_org_plugin_key",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    plugin_id: Mapped[str] = mapped_column(String(80), default="vrp-import")
+    external_key: Mapped[str] = mapped_column(String(320))
+    external_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    external_name: Mapped[str] = mapped_column(String(255))
+    normalized_external_name: Mapped[str] = mapped_column(String(255), index=True)
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    conversion_factor: Mapped[Decimal] = mapped_column(
+        Numeric(18, 3), default=Decimal("1")
+    )
+    confirmed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    product: Mapped[Product] = relationship(back_populates="external_mappings")
+
+
+class VrpImportSchedule(Base):
+    __tablename__ = "vrp_import_schedules"
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True
+    )
+    frequency: Mapped[str] = mapped_column(String(20), default="DAILY")
+    processing_time: Mapped[time] = mapped_column(Time, default=time(23, 55))
+    timezone: Mapped[str] = mapped_column(String(80), default="Europe/Bratislava")
+    weekly_day: Mapped[str] = mapped_column(String(16), default="SUNDAY")
+    monthly_rule: Mapped[str] = mapped_column(String(16), default="LAST_DAY")
+    auto_process: Mapped[bool] = mapped_column(Boolean, default=False)
+    unknown_product_policy: Mapped[str] = mapped_column(String(32), default="STOP")
+    negative_stock_policy: Mapped[str] = mapped_column(
+        String(32), default="ALLOW_WITH_WARNING"
+    )
+    overlap_policy: Mapped[str] = mapped_column(String(20), default="BLOCK")
+    next_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class VrpImportBatch(Base):
+    __tablename__ = "vrp_import_batches"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "file_hash",
+            name="uq_vrp_batch_org_file_hash",
+        ),
+        UniqueConstraint(
+            "organization_id",
+            "canonical_items_hash",
+            name="uq_vrp_batch_org_canonical_hash",
+        ),
+        UniqueConstraint(
+            "organization_id",
+            "external_report_id",
+            name="uq_vrp_batch_org_external_report",
+        ),
+        Index(
+            "ix_vrp_batch_org_status_scheduled",
+            "organization_id",
+            "status",
+            "scheduled_for",
+        ),
+        Index(
+            "ix_vrp_batch_org_period",
+            "organization_id",
+            "period_start",
+            "period_end",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    original_filename: Mapped[str] = mapped_column(String(255))
+    content_type: Mapped[str] = mapped_column(String(120))
+    size_bytes: Mapped[int] = mapped_column(BigInteger)
+    object_key: Mapped[str] = mapped_column(String(500))
+    file_hash: Mapped[str] = mapped_column(String(64), index=True)
+    canonical_items_hash: Mapped[str] = mapped_column(String(64), index=True)
+    parser_version: Mapped[str] = mapped_column(String(40))
+    external_report_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    period_start: Mapped[date] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(32), default="UPLOADED")
+    scheduled_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    error_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    uploaded_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    processed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    reversed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+    processing_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    processed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reversed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    items: Mapped[list[VrpImportItem]] = relationship(
+        back_populates="batch",
+        cascade="all, delete-orphan",
+        order_by="VrpImportItem.line_number",
+    )
+    errors: Mapped[list[VrpImportError]] = relationship(
+        back_populates="batch",
+        cascade="all, delete-orphan",
+        order_by="VrpImportError.line_number",
+    )
+
+
+class VrpImportItem(Base):
+    __tablename__ = "vrp_import_items"
+    __table_args__ = (
+        UniqueConstraint("batch_id", "line_number", name="uq_vrp_item_batch_line"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    batch_id: Mapped[str] = mapped_column(
+        ForeignKey("vrp_import_batches.id", ondelete="CASCADE"), index=True
+    )
+    line_number: Mapped[int]
+    external_product_id: Mapped[str | None] = mapped_column(
+        String(160), nullable=True
+    )
+    external_name: Mapped[str] = mapped_column(String(255))
+    normalized_external_name: Mapped[str] = mapped_column(String(255))
+    quantity: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    unit: Mapped[str] = mapped_column(String(80), default="piece")
+    matched_product_id: Mapped[str | None] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    conversion_factor: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 3), nullable=True
+    )
+    base_quantity: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 3), nullable=True
+    )
+    match_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="NEEDS_REVIEW")
+    validation_issues: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    batch: Mapped[VrpImportBatch] = relationship(back_populates="items")
+    matched_product: Mapped[Product | None] = relationship()
+
+
+class VrpImportError(Base):
+    __tablename__ = "vrp_import_errors"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    batch_id: Mapped[str] = mapped_column(
+        ForeignKey("vrp_import_batches.id", ondelete="CASCADE"), index=True
+    )
+    line_number: Mapped[int | None] = mapped_column(nullable=True)
+    error_code: Mapped[str] = mapped_column(String(100))
+    message: Mapped[str] = mapped_column(String(500))
+    raw_row: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    batch: Mapped[VrpImportBatch] = relationship(back_populates="errors")
 
 
 class ReviewTask(Base):

@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   FileSearch,
+  FileSpreadsheet,
   FileText,
   Home,
   LayoutDashboard,
@@ -27,13 +28,14 @@ import ProductDialog from "./ProductDialog";
 import ReceiptReviewPage from "./ReceiptReviewPage";
 import ReviewTasksPage from "./ReviewTasksPage";
 import StockDialog from "./StockDialog";
+import VrpImportsPage from "./VrpImportsPage";
 
 type Props = {
   session: Session;
   onLogout: () => void;
 };
 
-type WorkspaceView = "overview" | "documents" | "reviews" | "receipt";
+type WorkspaceView = "overview" | "documents" | "reviews" | "receipt" | "vrp";
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
@@ -43,6 +45,10 @@ export default function Dashboard({ session, onLogout }: Props) {
   const [productDialog, setProductDialog] = useState(false);
   const [documentDialog, setDocumentDialog] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [selectedVrpBatchId, setSelectedVrpBatchId] = useState<string | null>(null);
+  const [reviewOrigin, setReviewOrigin] = useState<"documents" | "vrp">(
+    "documents"
+  );
   const [stockMode, setStockMode] = useState<"receive" | "correct" | null>(null);
 
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: getProducts });
@@ -80,7 +86,7 @@ export default function Dashboard({ session, onLogout }: Props) {
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.3.0</span>
+            <span>verzió 0.4.0</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
@@ -116,10 +122,23 @@ export default function Dashboard({ session, onLogout }: Props) {
           </button>
           <button
             className={`nav-item ${activeView === "reviews" ? "active" : ""}`}
-            onClick={() => setActiveView("reviews")}
+            onClick={() => {
+              setReviewOrigin("documents");
+              setActiveView("reviews");
+            }}
           >
             <FileSearch aria-hidden="true" />
             Ellenőrzések
+          </button>
+          <button
+            className={`nav-item ${activeView === "vrp" ? "active" : ""}`}
+            onClick={() => {
+              setSelectedVrpBatchId(null);
+              setActiveView("vrp");
+            }}
+          >
+            <FileSpreadsheet aria-hidden="true" />
+            VRP-import
           </button>
         </nav>
         <div className="sidebar-footer">
@@ -144,7 +163,10 @@ export default function Dashboard({ session, onLogout }: Props) {
         {activeView === "documents" ? (
           <DocumentsPage
             onUpload={() => setDocumentDialog(true)}
-            onOpenReviews={() => setActiveView("reviews")}
+            onOpenReviews={() => {
+              setReviewOrigin("documents");
+              setActiveView("reviews");
+            }}
             onOpenReceipt={(documentId) => {
               setSelectedDocumentId(documentId);
               setActiveView("receipt");
@@ -152,10 +174,14 @@ export default function Dashboard({ session, onLogout }: Props) {
           />
         ) : activeView === "reviews" ? (
           <ReviewTasksPage
-            onBack={() => setActiveView("documents")}
+            onBack={() => setActiveView(reviewOrigin)}
             onOpenReceipt={(documentId) => {
               setSelectedDocumentId(documentId);
               setActiveView("receipt");
+            }}
+            onOpenVrp={(batchId) => {
+              setSelectedVrpBatchId(batchId);
+              setActiveView("vrp");
             }}
           />
         ) : activeView === "receipt" && selectedDocumentId ? (
@@ -163,6 +189,16 @@ export default function Dashboard({ session, onLogout }: Props) {
             documentId={selectedDocumentId}
             products={products}
             onBack={() => setActiveView("documents")}
+          />
+        ) : activeView === "vrp" ? (
+          <VrpImportsPage
+            role={session.user.role}
+            products={products}
+            initialBatchId={selectedVrpBatchId}
+            onOpenReviews={() => {
+              setReviewOrigin("vrp");
+              setActiveView("reviews");
+            }}
           />
         ) : (
           <>
@@ -369,9 +405,15 @@ export default function Dashboard({ session, onLogout }: Props) {
           <FileText aria-hidden="true" />
           Iratok
         </button>
-        <button onClick={() => setStockMode("correct")}>
-          <ClipboardCheck aria-hidden="true" />
-          Számlálás
+        <button
+          className={activeView === "vrp" ? "accent" : ""}
+          onClick={() => {
+            setSelectedVrpBatchId(null);
+            setActiveView("vrp");
+          }}
+        >
+          <FileSpreadsheet aria-hidden="true" />
+          VRP
         </button>
         <button onClick={() => setProductDialog(true)}>
           <PackagePlus aria-hidden="true" />

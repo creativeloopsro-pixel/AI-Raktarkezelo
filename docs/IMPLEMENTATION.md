@@ -1,10 +1,11 @@
 # Megvalósítási térkép
 
-## 0.3.0 hatókör
+## 0.4.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
-és a negyedik fázis Ollama AI-folyamatát fedi le.
+és a negyedik fázis Ollama AI-folyamatát, továbbá az ötödik fázis
+VRP-importját fedi le.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -23,6 +24,14 @@ felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjai
 | AI audit | Modell-, prompt-, token-, idő- és tool-call metaadat minden kinyeréshez |
 | Product matching | Vonalkód, pontos név, lexikai egyezés és csomagolási konverzió |
 | Goods receipt | Ember által javítható tervezet és tranzakciós, idempotens készletkönyvelés |
+| VRP parser | CSV, XLSX és géppel olvasható PDF, verziózott többnyelvű oszlopfelismerés |
+| VRP deduplikáció | Fájlhash, külső riportazonosító, kanonikus tételhash és adatbázis-egyediség |
+| VRP időszakvédelem | Szervezeten belüli időszakátfedés blokkolása és review feladat |
+| External mapping | Megerősített külső termékazonosító + konverziós faktor tartós tárolása |
+| VRP scheduling | Kézi/napi/heti/havi időzónás futás, Dramatiq dispatch és stale recovery |
+| VRP inventory | Közös batch source ID, tételenkénti idempotencia, tranzakciós könyvelés |
+| VRP reversal | Adminisztrátori ellenmozgások, audit és nettó nulla készlethatás |
+| VRP PWA | Feltöltés, importlista, tételes megfeleltetés, ütemezés és visszafordítás |
 
 ## Modulhatárok
 
@@ -35,5 +44,5 @@ felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjai
 
 ## Következő tervezett kiadás
 
-`0.4.0`: VRP-riportfeltöltés, termék-mapping, napi/heti/havi ütemezés,
-időszakátfedés-védelem és visszavonás.
+`0.5.0`: dokumentáció szerinti e-mailes beérkeztetési csatorna, biztonságos
+csatolmányfeldolgozás és a meglévő dokumentum/VRP folyamatokhoz irányítás.

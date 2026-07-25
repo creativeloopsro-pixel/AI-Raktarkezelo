@@ -4,6 +4,39 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.4.0] - 2026-07-25
+
+### Hozzáadva
+
+- CSV-, XLSX- és táblázatos PDF-alapú, verziózott VRP2 `Report predaja`
+  parser szlovák, magyar és angol oszlopnév-felismeréssel.
+- Szervezetenkénti fájlhash-, külső riportazonosító- és sorrendfüggetlen
+  kanonikus tételhash-duplikációvédelem adatbázis-korlátokkal.
+- Riportidőszak-átfedés blokkolása és kézi ellenőrzési feladat létrehozása.
+- Külső termékazonosító, vonalkód, SKU, pontos név és lexikai javaslat alapú
+  megfeleltetés; az első kézzel jóváhagyott konverzió tartós megjegyzése.
+- Ismeretlen termékre `STOP`, `PROCESS_KNOWN` és `CREATE_REVIEW`, negatív
+  készletre `STOP` és figyelmeztető engedélyezési szabály.
+- Kézi, napi, heti és havi, időzónahelyes VRP-ütemezés Dramatiq workerrel,
+  elakadt futások helyreállításával.
+- Egy import minden ismert tételét egyetlen tranzakcióban, közös
+  forrásazonosítóval és idempotenciakulccsal könyvelő készletfolyamat.
+- Adminisztrátori, auditált teljes import-visszafordítás ellenmozgásokkal.
+- Reszponzív VRP-munkafelület feltöltéssel, tételes faktorjóváhagyással,
+  állapotfolyamattal, ütemezési szabályokkal és ellenőrzési soros navigációval.
+- Negyedik Alembic-migráció és parser-, ütemező-, szolgáltatás- és API-tesztek.
+
+### Biztonság
+
+- Készletet a VRP-modul is kizárólag a központi `StockService` rétegen át
+  módosít; részleges import nem kerül commitolásra.
+- A kliens MIME-értéke nem megbízható: fájlkiterjesztés, magic byte,
+  méretkorlát és opcionális ClamAV-vizsgálat előzi meg a tárolást.
+- Az átfedési szabály nem kapcsolható ki, ismeretlen termék nem könyvelődik
+  csendben, és a visszafordítás nettó készlethatása nulla.
+- Minden VRP-lekérdezés, duplikációvizsgálat és termékpárosítás
+  szervezetazonosítóval szűrt.
+
 ## [0.3.0] - 2026-07-25
 
 ### Hozzáadva

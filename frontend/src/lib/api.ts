@@ -5,7 +5,10 @@ import type {
   ProductCreate,
   ReviewTask,
   Session,
-  StockBalance
+  StockBalance,
+  VrpImportBatch,
+  VrpSchedule,
+  VrpScheduleUpdate
 } from "../types";
 
 const SESSION_KEY = "ai-raktar-session";
@@ -280,5 +283,79 @@ export function receiveStock(
       source_id: `manual:${operationId}`,
       reason
     })
+  });
+}
+
+export function getVrpImports(): Promise<VrpImportBatch[]> {
+  return request<VrpImportBatch[]>("/vrp/imports");
+}
+
+export function getVrpImport(batchId: string): Promise<VrpImportBatch> {
+  return request<VrpImportBatch>(`/vrp/imports/${batchId}`);
+}
+
+export function uploadVrpImport(
+  file: File,
+  periodStart: string,
+  periodEnd: string,
+  externalReportId: string
+): Promise<VrpImportBatch> {
+  const form = new FormData();
+  form.set("file", file);
+  form.set("period_start", periodStart);
+  form.set("period_end", periodEnd);
+  if (externalReportId.trim()) {
+    form.set("external_report_id", externalReportId.trim());
+  }
+  return request<VrpImportBatch>("/vrp/imports", {
+    method: "POST",
+    body: form
+  });
+}
+
+export function updateVrpItem(
+  batchId: string,
+  itemId: string,
+  productId: string,
+  conversionFactor: number
+): Promise<VrpImportBatch> {
+  return request<VrpImportBatch>(
+    `/vrp/imports/${batchId}/items/${itemId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        product_id: productId,
+        conversion_factor: conversionFactor
+      })
+    }
+  );
+}
+
+export function processVrpImport(batchId: string): Promise<VrpImportBatch> {
+  return request<VrpImportBatch>(`/vrp/imports/${batchId}/process`, {
+    method: "POST"
+  });
+}
+
+export function reverseVrpImport(
+  batchId: string,
+  reason: string
+): Promise<VrpImportBatch> {
+  return request<VrpImportBatch>(`/vrp/imports/${batchId}/reverse`, {
+    method: "POST",
+    body: JSON.stringify({ reason })
+  });
+}
+
+export function getVrpSchedule(): Promise<VrpSchedule> {
+  return request<VrpSchedule>("/vrp/schedule");
+}
+
+export function updateVrpSchedule(
+  payload: VrpScheduleUpdate
+): Promise<VrpSchedule> {
+  return request<VrpSchedule>("/vrp/schedule", {
+    method: "PUT",
+    body: JSON.stringify(payload)
   });
 }

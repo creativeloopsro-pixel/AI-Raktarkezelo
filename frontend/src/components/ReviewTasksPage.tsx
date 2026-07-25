@@ -17,6 +17,7 @@ import type { ReviewTask } from "../types";
 type Props = {
   onBack: () => void;
   onOpenReceipt: (documentId: string) => void;
+  onOpenVrp: (batchId: string) => void;
 };
 
 const reasonLabels: Record<string, string> = {
@@ -30,10 +31,18 @@ const reasonLabels: Record<string, string> = {
   QUANTITY_OUTLIER: "A felismert mennyiség szokatlanul nagy",
   ai_provider_unavailable: "Az AI-szolgáltató nem érhető el",
   ai_response_invalid: "Az AI-válasz nem felel meg a kötelező sémának",
-  document_preprocessing_failed: "A dokumentum nem készíthető elő az AI számára"
+  document_preprocessing_failed: "A dokumentum nem készíthető elő az AI számára",
+  PERIOD_OVERLAP: "A riportidőszak átfed egy korábbi VRP-importtal",
+  INVALID_REPORT_ROWS: "A VRP-riport hibás tételsorokat tartalmaz",
+  MAPPING_REVIEW_REQUIRED: "A javasolt VRP-termékegyezést jóvá kell hagyni",
+  NEGATIVE_STOCK_BLOCKED: "A negatívkészlet-szabály blokkolta a könyvelést"
 };
 
-export default function ReviewTasksPage({ onBack, onOpenReceipt }: Props) {
+export default function ReviewTasksPage({
+  onBack,
+  onOpenReceipt,
+  onOpenVrp
+}: Props) {
   const queryClient = useQueryClient();
   const [selectedTask, setSelectedTask] = useState<ReviewTask | null>(null);
   const [note, setNote] = useState("Kézzel ellenőrizve és elfogadva.");
@@ -118,6 +127,8 @@ export default function ReviewTasksPage({ onBack, onOpenReceipt }: Props) {
               <span className="review-type">
                 {task.task_type === "GOODS_RECEIPT_REVIEW"
                   ? "AI-termékpárosítás"
+                  : task.task_type === "VRP_IMPORT_REVIEW"
+                    ? "VRP-import ellenőrzés"
                   : task.task_type === "AI_PROCESSING_FAILURE"
                     ? "AI-feldolgozási hiba"
                     : "Dokumentumvalidáció"}
@@ -135,6 +146,11 @@ export default function ReviewTasksPage({ onBack, onOpenReceipt }: Props) {
                     task.context.document_id
                   ) {
                     onOpenReceipt(task.context.document_id);
+                  } else if (
+                    task.task_type === "VRP_IMPORT_REVIEW" &&
+                    task.context.batch_id
+                  ) {
+                    onOpenVrp(task.context.batch_id);
                   } else if (task.task_type === "DOCUMENT_VALIDATION") {
                     setSelectedTask(task);
                   } else if (task.context.document_id) {
@@ -147,6 +163,8 @@ export default function ReviewTasksPage({ onBack, onOpenReceipt }: Props) {
                 <ClipboardCheck aria-hidden="true" />
                 {task.task_type === "GOODS_RECEIPT_REVIEW"
                   ? "Tételek"
+                  : task.task_type === "VRP_IMPORT_REVIEW"
+                    ? "Import"
                   : task.task_type === "DOCUMENT_VALIDATION"
                     ? "Ellenőrzés"
                     : "Újrapróbálás"}

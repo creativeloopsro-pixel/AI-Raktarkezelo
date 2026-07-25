@@ -1,5 +1,6 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -268,3 +269,103 @@ class GoodsReceiptItemUpdate(BaseModel):
     product_id: str
     packaging_unit_id: str | None = None
     quantity: Decimal = Field(gt=0, decimal_places=3)
+
+
+class VrpImportItemRead(ApiModel):
+    id: str
+    line_number: int
+    external_product_id: str | None
+    external_name: str
+    quantity: Decimal
+    unit: str
+    matched_product_id: str | None
+    conversion_factor: Decimal | None
+    base_quantity: Decimal | None
+    match_method: str | None
+    status: str
+    validation_issues: list[str]
+    matched_product: ReceiptProductSummary | None
+
+
+class VrpImportErrorRead(ApiModel):
+    id: str
+    line_number: int | None
+    error_code: str
+    message: str
+    raw_row: dict
+
+
+class VrpImportBatchRead(ApiModel):
+    id: str
+    organization_id: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    file_hash: str
+    canonical_items_hash: str
+    parser_version: str
+    external_report_id: str | None
+    period_start: date
+    period_end: date
+    status: str
+    scheduled_for: datetime | None
+    error_summary: dict
+    uploaded_by: str | None
+    processed_by: str | None
+    reversed_by: str | None
+    created_at: datetime
+    updated_at: datetime
+    processed_at: datetime | None
+    reversed_at: datetime | None
+    items: list[VrpImportItemRead]
+    errors: list[VrpImportErrorRead]
+
+
+class VrpImportItemUpdate(BaseModel):
+    product_id: str
+    conversion_factor: Decimal = Field(gt=0, max_digits=18, decimal_places=3)
+
+
+class VrpImportReverse(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class VrpScheduleUpdate(BaseModel):
+    frequency: Literal["DAILY", "WEEKLY", "MONTHLY", "MANUAL"]
+    processing_time: time
+    timezone: str = Field(min_length=1, max_length=80)
+    weekly_day: Literal[
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY",
+    ] = "SUNDAY"
+    monthly_rule: str = Field(default="LAST_DAY", pattern=r"^(LAST_DAY|[1-9]|1\d|2[0-8])$")
+    auto_process: bool = False
+    unknown_product_policy: Literal[
+        "STOP", "PROCESS_KNOWN", "CREATE_REVIEW"
+    ] = "STOP"
+    negative_stock_policy: Literal["ALLOW_WITH_WARNING", "STOP"] = (
+        "ALLOW_WITH_WARNING"
+    )
+    overlap_policy: Literal["BLOCK"] = "BLOCK"
+
+
+class VrpScheduleRead(ApiModel):
+    organization_id: str
+    frequency: str
+    processing_time: time
+    timezone: str
+    weekly_day: str
+    monthly_rule: str
+    auto_process: bool
+    unknown_product_policy: str
+    negative_stock_policy: str
+    overlap_policy: str
+    next_run_at: datetime | None
+    last_run_at: datetime | None
+    updated_by: str | None
+    updated_at: datetime

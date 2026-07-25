@@ -1668,6 +1668,399 @@ button:disabled {
   margin-top: 0.8rem;
 }
 
+.vrp-schedule-band {
+  display: grid;
+  margin-top: 1.6rem;
+  border-block: 1px solid var(--line);
+  grid-template-columns: auto minmax(11rem, 1fr) minmax(15rem, 1.3fr) auto;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1rem 0.25rem;
+}
+
+.vrp-schedule-icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  place-items: center;
+  color: var(--accent-dark);
+  background: #f3e4c9;
+}
+
+.vrp-schedule-icon svg {
+  width: 1.2rem;
+}
+
+.vrp-schedule-band > div:not(.vrp-schedule-icon) {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.vrp-schedule-band span,
+.vrp-import-row small {
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.vrp-schedule-band strong {
+  font-size: 0.82rem;
+}
+
+.vrp-schedule-state {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem !important;
+}
+
+.vrp-list-section {
+  margin-top: 2.5rem;
+}
+
+.vrp-import-list {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.vrp-import-row {
+  display: grid;
+  width: 100%;
+  min-height: 5rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  grid-template-columns: auto minmax(14rem, 1.5fr) minmax(10rem, 0.8fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0.35rem;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  transition:
+    padding 150ms ease,
+    background 150ms ease;
+}
+
+.vrp-import-row:hover {
+  padding-inline: 0.65rem;
+  background: rgb(255 254 249 / 60%);
+}
+
+.vrp-import-row > span:not(.file-glyph, .vrp-status) {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.vrp-import-name strong {
+  overflow: hidden;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vrp-status {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid #c9d0d4;
+  border-radius: 999px;
+  align-items: center;
+  padding: 0.42rem 0.65rem;
+  color: var(--muted);
+  background: #eff1f1;
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.vrp-status.ready,
+.vrp-status.scheduled,
+.vrp-status.completed {
+  border-color: #b8d0c5;
+  color: var(--success);
+  background: #eaf3ef;
+}
+
+.vrp-status.needs_review,
+.vrp-status.overlap,
+.vrp-status.failed {
+  border-color: #dfb8b0;
+  color: var(--danger);
+  background: #f8eae7;
+}
+
+.vrp-status.processing {
+  border-color: #d4bd91;
+  color: var(--accent-dark);
+  background: #f6ecd9;
+}
+
+.vrp-status.reversed {
+  border-color: #c7c4bd;
+  color: #59646c;
+  background: #e9e7e1;
+}
+
+.vrp-progress {
+  display: grid;
+  margin: 1.7rem 0 0;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.vrp-progress span {
+  position: relative;
+  display: grid;
+  border-top: 1px solid var(--line);
+  gap: 0.45rem;
+  padding: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vrp-progress i {
+  position: absolute;
+  top: -0.28rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.vrp-progress span.active {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.vrp-progress span.active i {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.vrp-meta {
+  margin-top: 1rem;
+}
+
+.vrp-file-hash {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.66rem;
+}
+
+.vrp-lines {
+  margin-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.vrp-line {
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0.75rem;
+}
+
+.vrp-line.attention {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+
+.vrp-line-source {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vrp-line-source > span:first-child {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  place-items: center;
+  color: var(--accent-dark);
+  background: var(--surface);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.75rem;
+}
+
+.vrp-line-source strong,
+.vrp-line-source small {
+  display: block;
+}
+
+.vrp-line-source strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.vrp-line-source small {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.vrp-item-status {
+  color: var(--success);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.vrp-item-status.needs_review,
+.vrp-item-status.skipped {
+  color: var(--danger);
+}
+
+.vrp-line-fields {
+  display: grid;
+  margin: 0.9rem 0 0 2.75rem;
+  grid-template-columns: minmax(15rem, 1.5fr) minmax(9rem, 0.7fr) minmax(9rem, 0.6fr);
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.vrp-line-fields label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.vrp-line-fields select,
+.vrp-line-fields input {
+  width: 100%;
+  min-height: 2.6rem;
+  border: 1px solid #cbc6bc;
+  border-radius: 0.5rem;
+  outline: 0;
+  padding: 0 0.7rem;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 0.75rem;
+}
+
+.vrp-line-fields select:focus,
+.vrp-line-fields input:focus {
+  border-color: var(--accent-dark);
+  box-shadow: 0 0 0 3px rgb(216 155 56 / 14%);
+}
+
+.vrp-line-fields select:disabled,
+.vrp-line-fields input:disabled {
+  color: var(--muted);
+  background: #efede7;
+}
+
+.vrp-base-quantity {
+  min-height: 2.6rem;
+  border-left: 1px solid var(--line);
+  padding-left: 0.75rem;
+}
+
+.vrp-base-quantity span,
+.vrp-base-quantity strong {
+  display: block;
+}
+
+.vrp-base-quantity span {
+  color: var(--muted);
+  font-size: 0.61rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.vrp-base-quantity strong {
+  margin-top: 0.3rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.vrp-line-footer {
+  display: flex;
+  min-height: 2.2rem;
+  margin-left: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.65rem;
+}
+
+.danger-button {
+  border-color: #6f3130;
+  color: #ffe9e4;
+  background: #6f3130;
+}
+
+.vrp-upload-fields {
+  margin-top: 1rem;
+}
+
+.form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.form-grid label small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.vrp-schedule-dialog {
+  width: min(42rem, calc(100vw - 2rem));
+}
+
+.vrp-toggle {
+  display: flex;
+  margin-top: 1rem;
+  border-block: 1px solid var(--line);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 0;
+}
+
+.vrp-toggle input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent-dark);
+}
+
+.vrp-toggle span,
+.vrp-toggle strong,
+.vrp-toggle small {
+  display: block;
+}
+
+.vrp-toggle strong {
+  font-size: 0.76rem;
+}
+
+.vrp-toggle small {
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+
+.vrp-policy-note {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.vrp-policy-note svg {
+  width: 1rem;
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
 .mobile-actions {
   display: none;
 }
@@ -1731,6 +2124,27 @@ button:disabled {
 
   .receipt-line-fields {
     grid-template-columns: 1.4fr 1fr 8rem;
+  }
+
+  .vrp-schedule-band {
+    grid-template-columns: auto 1fr 1fr;
+  }
+
+  .vrp-schedule-state {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+  }
+
+  .vrp-line-fields {
+    grid-template-columns: 1.4fr 0.7fr;
+  }
+
+  .vrp-base-quantity {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    padding-top: 0.6rem;
+    padding-left: 0;
   }
 
   .base-quantity {
@@ -2028,6 +2442,106 @@ button:disabled {
 
   .receipt-approval-bar .primary-button {
     width: 100%;
+  }
+
+  .vrp-summary {
+    margin-top: 1.5rem;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .vrp-summary > div:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .vrp-summary > div:nth-child(4) {
+    border-top: 1px solid var(--line);
+  }
+
+  .vrp-schedule-band {
+    grid-template-columns: auto 1fr;
+    gap: 0.8rem;
+  }
+
+  .vrp-schedule-band > div:nth-child(3),
+  .vrp-schedule-state {
+    grid-column: 2;
+  }
+
+  .vrp-import-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .vrp-import-row > span:nth-child(3) {
+    display: none;
+  }
+
+  .vrp-import-name strong {
+    max-width: 11rem;
+  }
+
+  .vrp-progress span {
+    overflow: hidden;
+    font-size: 0.52rem;
+    text-overflow: ellipsis;
+  }
+
+  .vrp-meta {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .vrp-meta > div:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .vrp-meta > div:nth-child(4) {
+    border-top: 1px solid var(--line);
+  }
+
+  .vrp-line {
+    padding-inline: 0.35rem;
+  }
+
+  .vrp-line-source {
+    grid-template-columns: 2rem 1fr;
+  }
+
+  .vrp-item-status {
+    grid-column: 2;
+  }
+
+  .vrp-line-fields {
+    margin-left: 0;
+    grid-template-columns: 1fr 0.65fr;
+  }
+
+  .vrp-line-fields label:first-child,
+  .vrp-base-quantity {
+    grid-column: 1 / -1;
+  }
+
+  .vrp-line-footer {
+    margin-left: 0;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .vrp-line-footer .text-button {
+    min-height: 2.4rem;
+    font-size: 0.7rem;
+  }
+
+  .vrp-schedule-state .text-button {
+    font-size: 0.68rem;
+  }
+
+  .vrp-schedule-state .text-button::after {
+    content: none;
+  }
+
+  .vrp-list-section {
+    padding-bottom: 5rem;
   }
 
   .mobile-actions {

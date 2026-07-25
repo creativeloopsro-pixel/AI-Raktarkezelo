@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     ai_quantity_outlier_threshold: float = 10000
     ai_max_image_side: int = 1800
     ai_worker_poll_seconds: int = 5
+    vrp_max_upload_mb: int = 15
+    vrp_max_rows: int = 10000
+    vrp_scheduler_poll_seconds: int = 30
 
     @property
     def cors_origin_list(self) -> list[str]:

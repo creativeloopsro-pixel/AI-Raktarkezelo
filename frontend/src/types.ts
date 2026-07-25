@@ -102,6 +102,9 @@ export type ReviewTask = {
     issues?: string[];
     document_id?: string;
     draft_id?: string;
+    batch_id?: string;
+    period_start?: string;
+    period_end?: string;
   };
   assigned_to: string | null;
   resolved_by: string | null;
@@ -170,3 +173,88 @@ export type GoodsReceiptDraft = {
   };
   items: GoodsReceiptItem[];
 };
+
+export type VrpImportItem = {
+  id: string;
+  line_number: number;
+  external_product_id: string | null;
+  external_name: string;
+  quantity: string;
+  unit: string;
+  matched_product_id: string | null;
+  conversion_factor: string | null;
+  base_quantity: string | null;
+  match_method: string | null;
+  status: string;
+  validation_issues: string[];
+  matched_product: {
+    id: string;
+    name: string;
+    internal_sku: string;
+    base_unit: string;
+  } | null;
+};
+
+export type VrpImportError = {
+  id: string;
+  line_number: number | null;
+  error_code: string;
+  message: string;
+  raw_row: Record<string, unknown>;
+};
+
+export type VrpImportBatch = {
+  id: string;
+  organization_id: string;
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  file_hash: string;
+  canonical_items_hash: string;
+  parser_version: string;
+  external_report_id: string | null;
+  period_start: string;
+  period_end: string;
+  status: string;
+  scheduled_for: string | null;
+  error_summary: Record<string, unknown>;
+  uploaded_by: string | null;
+  processed_by: string | null;
+  reversed_by: string | null;
+  created_at: string;
+  updated_at: string;
+  processed_at: string | null;
+  reversed_at: string | null;
+  items: VrpImportItem[];
+  errors: VrpImportError[];
+};
+
+export type VrpSchedule = {
+  organization_id: string;
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "MANUAL";
+  processing_time: string;
+  timezone: string;
+  weekly_day: string;
+  monthly_rule: string;
+  auto_process: boolean;
+  unknown_product_policy: "STOP" | "PROCESS_KNOWN" | "CREATE_REVIEW";
+  negative_stock_policy: "ALLOW_WITH_WARNING" | "STOP";
+  overlap_policy: "BLOCK";
+  next_run_at: string | null;
+  last_run_at: string | null;
+  updated_by: string | null;
+  updated_at: string;
+};
+
+export type VrpScheduleUpdate = Pick<
+  VrpSchedule,
+  | "frequency"
+  | "processing_time"
+  | "timezone"
+  | "weekly_day"
+  | "monthly_rule"
+  | "auto_process"
+  | "unknown_product_policy"
+  | "negative_stock_policy"
+  | "overlap_policy"
+>;

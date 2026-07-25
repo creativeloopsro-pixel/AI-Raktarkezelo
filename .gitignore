@@ -24,6 +24,8 @@ data/
 uploads/
 output/
 backend/output/
+tmp/
+.playwright-cli/
 *.db
 *.sqlite
 *.sqlite3
