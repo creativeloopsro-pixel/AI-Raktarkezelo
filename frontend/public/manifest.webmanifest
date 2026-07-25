@@ -1,0 +1,20 @@
+{
+  "name": "AI Raktárkezelő",
+  "short_name": "AI Raktár",
+  "description": "Gyors, auditált készletkezelés mobilról és laptopról.",
+  "theme_color": "#0d2338",
+  "background_color": "#f5f3ed",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "hu",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
