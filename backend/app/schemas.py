@@ -140,3 +140,51 @@ class HealthResponse(BaseModel):
     status: str
     database: str
     version: str
+
+
+class DocumentRead(ApiModel):
+    id: str
+    organization_id: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    sha256_hash: str
+    status: str
+    source_type: str
+    document_type: str
+    page_count: int
+    validation_summary: dict
+    uploaded_by: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class DocumentProcessingJobRead(ApiModel):
+    id: str
+    organization_id: str
+    document_id: str
+    job_type: str
+    status: str
+    attempts: int
+    error_code: str | None
+    created_at: datetime
+
+
+class ReviewTaskRead(ApiModel):
+    id: str
+    organization_id: str
+    task_type: str
+    entity_type: str
+    entity_id: str
+    reason_code: str
+    status: str
+    context: dict
+    assigned_to: str | None
+    resolved_by: str | None
+    resolution_note: str | None
+    created_at: datetime
+    resolved_at: datetime | None
+
+
+class ReviewTaskResolve(BaseModel):
+    resolution_note: str = Field(min_length=3, max_length=1000)

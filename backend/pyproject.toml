@@ -4,18 +4,23 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-raktar-api"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI Raktárkezelő FastAPI backend"
 requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.14,<2",
   "argon2-cffi>=23.1,<26",
+  "boto3>=1.40,<2",
   "email-validator>=2.2,<3",
   "fastapi>=0.115,<1",
+  "filetype>=1.2,<2",
+  "pillow>=11.3,<13",
   "psycopg[binary]>=3.2,<4",
   "pwdlib[argon2]>=0.2,<1",
   "pydantic-settings>=2.7,<3",
   "pyjwt[crypto]>=2.10,<3",
+  "pypdf>=6.0,<7",
+  "python-multipart>=0.0.20,<1",
   "sqlalchemy>=2.0.40,<2.1",
   "uvicorn[standard]>=0.34,<1",
 ]

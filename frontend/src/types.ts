@@ -68,3 +68,42 @@ export type ProductCreate = {
   }>;
 };
 
+export type DocumentItem = {
+  id: string;
+  organization_id: string;
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  sha256_hash: string;
+  status: string;
+  source_type: string;
+  document_type: string;
+  page_count: number;
+  validation_summary: {
+    issues?: string[];
+    virus_scan?: string;
+    declared_content_type?: string | null;
+  };
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewTask = {
+  id: string;
+  organization_id: string;
+  task_type: string;
+  entity_type: string;
+  entity_id: string;
+  reason_code: string;
+  status: string;
+  context: {
+    filename?: string;
+    issues?: string[];
+  };
+  assigned_to: string | null;
+  resolved_by: string | null;
+  resolution_note: string | null;
+  created_at: string;
+  resolved_at: string | null;
+};

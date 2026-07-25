@@ -6,11 +6,14 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.1.0` - domain- és alkalmazásalapok.
+`0.2.0` - biztonságos dokumentumbeérkeztetés és felülvizsgálati sor.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
-visszavonást, auditot és egy mobilbarát PWA-kezdőfelületet.
+visszavonást és auditot. Ezek mellett PDF- és képdokumentumok feltöltését,
+tartalomalapú fájlellenőrzését, szervezetenkénti SHA-256 duplikációvédelmét,
+objektumtárolását, feldolgozási sorba állítását és kézi felülvizsgálatát is
+biztosítja egy mobilbarát PWA-felületen.
 
 ## Gyors indítás Dockerrel
 
@@ -54,6 +57,12 @@ npm run dev
 A Vite fejlesztői szerver a `/api` kéréseket a `http://localhost:8000`
 címre továbbítja.
 
+Helyi fejlesztéskor a dokumentumok alapértelmezetten a
+`backend/data/objects` könyvtárba kerülnek. Docker Compose környezetben a
+MinIO S3-kompatibilis objektumtár használható. A ClamAV-vírusellenőrzés
+környezeti változóval kapcsolható be; bekapcsolt állapotban sikertelen
+ellenőrzés esetén a feltöltés zárt módon elutasításra kerül.
+
 ## Minőségellenőrzés
 
 ```powershell
@@ -71,5 +80,4 @@ npm run build
 - Minden átadott fejlesztési kör külön verziót kap.
 - A gyökér `VERSION`, a backend és a frontend verziója együtt változik.
 - Minden kiadás bekerül a `CHANGELOG.md` fájlba.
-- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.1.0`.
-
+- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.2.0`.

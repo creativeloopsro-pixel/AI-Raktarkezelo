@@ -1,9 +1,10 @@
 # Megvalósítási térkép
 
-## 0.1.0 hatókör
+## 0.2.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
-felületi alapjait fedi le.
+felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
+fedi le.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -13,6 +14,10 @@ felületi alapjait fedi le.
 | Audit | Érzékeny műveletek append-only naplója correlation ID-val |
 | Events | Tranzakcióban létrehozott outbox esemény |
 | PWA | Reszponzív operátori felület, offline shell és telepíthető manifest |
+| Documents | PDF- és képfeltöltés, oldalak, állapotok és idempotens feldolgozási feladat |
+| Object storage | Helyi fejlesztői tároló és S3/MinIO adapter, backend-proxyzott letöltés |
+| File security | Magic-byte MIME-ellenőrzés, méret- és oldallimit, SHA-256 duplikációvédelem, opcionális ClamAV |
+| Review | Sérült vagy bizonytalan dokumentumok manuális felülvizsgálati sora |
 
 ## Modulhatárok
 
@@ -25,6 +30,5 @@ felületi alapjait fedi le.
 
 ## Következő tervezett kiadás
 
-`0.2.0`: dokumentumfeltöltés, objektumtár, hash-alapú duplikációvédelem és
-ellenőrzési sor alapjai.
-
+`0.3.0`: háttér-feldolgozó worker, OCR és a dokumentumokból kinyert mezők
+AI-támogatott javaslatai, kötelező emberi jóváhagyással.

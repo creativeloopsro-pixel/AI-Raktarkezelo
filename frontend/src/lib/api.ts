@@ -1,4 +1,11 @@
-import type { Product, ProductCreate, Session, StockBalance } from "../types";
+import type {
+  DocumentItem,
+  Product,
+  ProductCreate,
+  ReviewTask,
+  Session,
+  StockBalance
+} from "../types";
 
 const SESSION_KEY = "ai-raktar-session";
 let refreshPromise: Promise<Session> | null = null;
@@ -38,7 +45,9 @@ async function request<T>(
 ): Promise<T> {
   const execute = (session: Session | null) => {
     const headers = new Headers(options.headers);
-    headers.set("Content-Type", "application/json");
+    if (!(options.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
     headers.set("X-Correlation-ID", crypto.randomUUID());
     if (authenticated && session) {
       headers.set("Authorization", `Bearer ${session.access_token}`);
@@ -136,6 +145,73 @@ export function getProducts(): Promise<Product[]> {
 
 export function getStock(): Promise<StockBalance[]> {
   return request<StockBalance[]>("/stock");
+}
+
+export function getDocuments(): Promise<DocumentItem[]> {
+  return request<DocumentItem[]>("/documents");
+}
+
+export function uploadDocument(file: File, documentType = "goods_receipt"): Promise<DocumentItem> {
+  const form = new FormData();
+  form.set("file", file);
+  form.set("document_type", documentType);
+  return request<DocumentItem>("/documents", {
+    method: "POST",
+    body: form
+  });
+}
+
+export function queueDocument(documentId: string): Promise<unknown> {
+  return request(`/documents/${documentId}/process`, {
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() }
+  });
+}
+
+export function getReviewTasks(): Promise<ReviewTask[]> {
+  return request<ReviewTask[]>("/review-tasks?status=OPEN");
+}
+
+export function resolveReviewTask(taskId: string, resolutionNote: string): Promise<ReviewTask> {
+  return request<ReviewTask>(`/review-tasks/${taskId}/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ resolution_note: resolutionNote })
+  });
+}
+
+export async function downloadDocument(document: DocumentItem): Promise<void> {
+  let session = readSession();
+  if (!session) throw new ApiError("A munkamenet lejárt.", 401);
+
+  const execute = (currentSession: Session) =>
+    fetch(`/api/v1/documents/${document.id}/download`, {
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "X-Correlation-ID": crypto.randomUUID()
+      }
+    });
+
+  let response = await execute(session);
+  if (response.status === 401) {
+    try {
+      session = await refreshAccessToken(session.refresh_token);
+      response = await execute(session);
+    } catch {
+      clearSession();
+      window.dispatchEvent(new Event("session-expired"));
+      throw new ApiError("A munkamenet lejárt.", 401);
+    }
+  }
+  if (!response.ok) {
+    throw new ApiError("A dokumentum letöltése sikertelen.", response.status);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = document.original_filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export function createProduct(payload: ProductCreate): Promise<Product> {
