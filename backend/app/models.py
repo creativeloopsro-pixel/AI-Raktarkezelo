@@ -45,6 +45,9 @@ class Organization(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     users: Mapped[list[User]] = relationship(back_populates="organization")
+    roles: Mapped[list[Role]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )
 
 
 class User(Base):
@@ -63,6 +66,153 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     organization: Mapped[Organization] = relationship(back_populates="users")
+    role_assignments: Mapped[list[UserRole]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="UserRole.user_id",
+    )
+    mfa_method: Mapped[UserMfaMethod | None] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+    refresh_sessions: Mapped[list[RefreshSession]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    api_tokens: Mapped[list[ApiToken]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class Role(Base):
+    __tablename__ = "roles"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "slug", name="uq_role_org_slug"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    slug: Mapped[str] = mapped_column(String(80))
+    description: Mapped[str] = mapped_column(String(500), default="")
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    organization: Mapped[Organization] = relationship(back_populates="roles")
+    permission_assignments: Mapped[list[RolePermission]] = relationship(
+        back_populates="role", cascade="all, delete-orphan"
+    )
+    user_assignments: Mapped[list[UserRole]] = relationship(
+        back_populates="role", cascade="all, delete-orphan"
+    )
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    code: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(String(500), default="")
+    category: Mapped[str] = mapped_column(String(80), default="system")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    role_assignments: Mapped[list[RolePermission]] = relationship(
+        back_populates="permission", cascade="all, delete-orphan"
+    )
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+    __table_args__ = (
+        UniqueConstraint("role_id", "permission_id", name="uq_role_permission"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    role_id: Mapped[str] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"), index=True
+    )
+    permission_id: Mapped[str] = mapped_column(
+        ForeignKey("permissions.id", ondelete="CASCADE"), index=True
+    )
+    granted_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    role: Mapped[Role] = relationship(back_populates="permission_assignments")
+    permission: Mapped[Permission] = relationship(back_populates="role_assignments")
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+    __table_args__ = (
+        UniqueConstraint("user_id", "role_id", name="uq_user_role"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    role_id: Mapped[str] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"), index=True
+    )
+    assigned_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    user: Mapped[User] = relationship(
+        back_populates="role_assignments", foreign_keys=[user_id]
+    )
+    role: Mapped[Role] = relationship(back_populates="user_assignments")
+
+
+class UserMfaMethod(Base):
+    __tablename__ = "user_mfa_methods"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    secret_encrypted: Mapped[str] = mapped_column(String(500))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_used_counter: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    confirmed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="mfa_method")
+    recovery_codes: Mapped[list[MfaRecoveryCode]] = relationship(
+        back_populates="method", cascade="all, delete-orphan"
+    )
+
+
+class MfaRecoveryCode(Base):
+    __tablename__ = "mfa_recovery_codes"
+    __table_args__ = (
+        UniqueConstraint("mfa_method_id", "code_hash", name="uq_mfa_recovery_code"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    mfa_method_id: Mapped[str] = mapped_column(
+        ForeignKey("user_mfa_methods.id", ondelete="CASCADE"), index=True
+    )
+    code_hash: Mapped[str] = mapped_column(String(64))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    method: Mapped[UserMfaMethod] = relationship(back_populates="recovery_codes")
 
 
 class RefreshSession(Base):
@@ -70,10 +220,53 @@ class RefreshSession(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    family_id: Mapped[str] = mapped_column(String(36), index=True, default=new_id)
+    replaced_by_session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("refresh_sessions.id", ondelete="SET NULL"), nullable=True
+    )
+    mfa_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_agent: Mapped[str] = mapped_column(String(500), default="")
+    ip_address: Mapped[str] = mapped_column(String(64), default="")
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+    user: Mapped[User] = relationship(back_populates="refresh_sessions")
+
+
+class ApiToken(Base):
+    __tablename__ = "api_tokens"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "token_hash", name="uq_api_token_org_hash"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(160))
+    token_prefix: Mapped[str] = mapped_column(String(20), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64))
+    scopes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped[User] = relationship(back_populates="api_tokens")
 
 
 class Product(Base):
@@ -372,6 +565,59 @@ class AuditLog(Base):
     correlation_id: Mapped[str] = mapped_column(String(80), index=True)
     details: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class ResumableUploadSession(Base):
+    __tablename__ = "resumable_upload_sessions"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "client_upload_id",
+            name="uq_resumable_upload_org_client",
+        ),
+        Index(
+            "ix_resumable_upload_org_status_updated",
+            "organization_id",
+            "status",
+            "updated_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    created_by: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    client_upload_id: Mapped[str] = mapped_column(String(80))
+    target_type: Mapped[str] = mapped_column(String(24))
+    filename: Mapped[str] = mapped_column(String(255))
+    declared_content_type: Mapped[str | None] = mapped_column(
+        String(160), nullable=True
+    )
+    total_size: Mapped[int] = mapped_column(BigInteger)
+    chunk_size: Mapped[int] = mapped_column(default=1024 * 1024)
+    total_chunks: Mapped[int] = mapped_column()
+    received_chunks: Mapped[list[int]] = mapped_column(JSON, default=list)
+    chunk_hashes: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
+    file_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    upload_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(32), default="PENDING")
+    result_entity_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    result_entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_error_code: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class Document(Base):

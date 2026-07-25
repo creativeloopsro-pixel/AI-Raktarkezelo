@@ -1,7 +1,7 @@
 def test_version_endpoint(client) -> None:
     response = client.get("/api/v1/system/version")
     assert response.status_code == 200
-    assert response.json()["version"] == "0.7.0"
+    assert response.json()["version"] == "0.8.0"
 
 
 def test_login_product_creation_and_stock_correction(client) -> None:
@@ -28,7 +28,16 @@ def test_login_product_creation_and_stock_correction(client) -> None:
     )
     assert reused_refresh_response.status_code == 401
 
-    token = refresh_response.json()["access_token"]
+    replacement_login = client.post(
+        "/api/v1/auth/login",
+        json={
+            "organization_slug": "tesztbolt",
+            "email": "admin@teszt.hu",
+            "password": "Secret-1234!",
+        },
+    )
+    assert replacement_login.status_code == 200
+    token = replacement_login.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     product_response = client.post(

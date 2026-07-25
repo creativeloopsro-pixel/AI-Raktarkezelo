@@ -7,6 +7,7 @@ import {
   Barcode,
   Boxes,
   ChevronRight,
+  CloudUpload,
   ClipboardCheck,
   ClipboardList,
   FileSearch,
@@ -20,12 +21,12 @@ import {
   Puzzle,
   Search,
   Settings,
+  UserCog,
 } from "lucide-react";
 
 import { getProducts, getStock } from "../lib/api";
 import type { Session } from "../types";
 import DocumentsPage from "./DocumentsPage";
-import DocumentUploadDialog from "./DocumentUploadDialog";
 import EmailIntakePage from "./EmailIntakePage";
 import ProductDialog from "./ProductDialog";
 import PluginsPage from "./PluginsPage";
@@ -35,9 +36,12 @@ import StockDialog from "./StockDialog";
 import VrpImportsPage from "./VrpImportsPage";
 
 const InventoryPage = lazy(() => import("./InventoryPage"));
+const UploadQueuePage = lazy(() => import("./UploadQueuePage"));
+const IdentityPage = lazy(() => import("./IdentityPage"));
 
 type Props = {
   session: Session;
+  onSessionUpdated: (session: Session) => void;
   onLogout: () => void;
 };
 
@@ -47,21 +51,28 @@ type WorkspaceView =
   | "reviews"
   | "receipt"
   | "inventory"
+  | "uploads"
+  | "identity"
   | "vrp"
   | "email"
   | "plugins";
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
-export default function Dashboard({ session, onLogout }: Props) {
-  const [activeView, setActiveView] = useState<WorkspaceView>(() =>
-    new URLSearchParams(window.location.search).get("view") === "inventory"
-      ? "inventory"
-      : "overview"
-  );
+export default function Dashboard({
+  session,
+  onSessionUpdated,
+  onLogout
+}: Props) {
+  const [activeView, setActiveView] = useState<WorkspaceView>(() => {
+    if (session.mfa_setup_required) return "identity";
+    const requested = new URLSearchParams(window.location.search).get("view");
+    return requested === "inventory" || requested === "uploads"
+      ? requested
+      : "overview";
+  });
   const [search, setSearch] = useState("");
   const [productDialog, setProductDialog] = useState(false);
-  const [documentDialog, setDocumentDialog] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [selectedVrpBatchId, setSelectedVrpBatchId] = useState<string | null>(null);
   const [reviewOrigin, setReviewOrigin] = useState<"documents" | "vrp">(
@@ -69,8 +80,19 @@ export default function Dashboard({ session, onLogout }: Props) {
   );
   const [stockMode, setStockMode] = useState<"receive" | "correct" | null>(null);
 
-  const productsQuery = useQuery({ queryKey: ["products"], queryFn: getProducts });
-  const stockQuery = useQuery({ queryKey: ["stock"], queryFn: getStock });
+  const permissions = session.user.permissions ?? [];
+  const can = (permission: string) => permissions.includes(permission);
+  const locked = session.mfa_setup_required;
+  const productsQuery = useQuery({
+    queryKey: ["products"],
+    queryFn: getProducts,
+    enabled: !locked && can("products.read")
+  });
+  const stockQuery = useQuery({
+    queryKey: ["stock"],
+    queryFn: getStock,
+    enabled: !locked && can("stock.read")
+  });
   const products = productsQuery.data ?? [];
   const stock = useMemo(() => stockQuery.data ?? [], [stockQuery.data]);
 
@@ -104,68 +126,88 @@ export default function Dashboard({ session, onLogout }: Props) {
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.7.0</span>
+            <span>verzió 0.8.0</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
-          <button
-            className={`nav-item ${activeView === "overview" ? "active" : ""}`}
-            onClick={() => setActiveView("overview")}
-          >
-            <LayoutDashboard aria-hidden="true" />
-            Áttekintés
-          </button>
-          <button
-            className={`nav-item ${activeView === "inventory" ? "active" : ""}`}
-            onClick={() => setActiveView("inventory")}
-          >
-            <ClipboardList aria-hidden="true" />
-            Kézi leltár
-          </button>
-          <button
-            className="nav-item"
-            onClick={() => setActiveView("overview")}
-          >
-            <Barcode aria-hidden="true" />
-            Termékek
-          </button>
-          <button
-            className={`nav-item ${
-              ["documents", "receipt"].includes(activeView) ? "active" : ""
-            }`}
-            onClick={() => setActiveView("documents")}
-          >
-            <FileText aria-hidden="true" />
-            Dokumentumok
-          </button>
-          <button
-            className={`nav-item ${activeView === "reviews" ? "active" : ""}`}
-            onClick={() => {
-              setReviewOrigin("documents");
-              setActiveView("reviews");
-            }}
-          >
-            <FileSearch aria-hidden="true" />
-            Ellenőrzések
-          </button>
-          <button
-            className={`nav-item ${activeView === "vrp" ? "active" : ""}`}
-            onClick={() => {
-              setSelectedVrpBatchId(null);
-              setActiveView("vrp");
-            }}
-          >
-            <FileSpreadsheet aria-hidden="true" />
-            VRP-import
-          </button>
-          <button
-            className={`nav-item ${activeView === "email" ? "active" : ""}`}
-            onClick={() => setActiveView("email")}
-          >
-            <Mail aria-hidden="true" />
-            E-mail postafiók
-          </button>
-          {["admin", "manager"].includes(session.user.role) && (
+          {!locked && can("stock.read") && (
+            <button
+              className={`nav-item ${activeView === "overview" ? "active" : ""}`}
+              onClick={() => setActiveView("overview")}
+            >
+              <LayoutDashboard aria-hidden="true" />
+              Áttekintés
+            </button>
+          )}
+          {!locked && can("inventory.count") && (
+            <button
+              className={`nav-item ${activeView === "inventory" ? "active" : ""}`}
+              onClick={() => setActiveView("inventory")}
+            >
+              <ClipboardList aria-hidden="true" />
+              Kézi leltár
+            </button>
+          )}
+          {!locked && can("products.read") && (
+            <button className="nav-item" onClick={() => setActiveView("overview")}>
+              <Barcode aria-hidden="true" />
+              Termékek
+            </button>
+          )}
+          {!locked && can("documents.read") && (
+            <button
+              className={`nav-item ${
+                ["documents", "receipt"].includes(activeView) ? "active" : ""
+              }`}
+              onClick={() => setActiveView("documents")}
+            >
+              <FileText aria-hidden="true" />
+              Dokumentumok
+            </button>
+          )}
+          {!locked && (can("documents.upload") || can("vrp.upload")) && (
+            <button
+              className={`nav-item ${activeView === "uploads" ? "active" : ""}`}
+              onClick={() => setActiveView("uploads")}
+            >
+              <CloudUpload aria-hidden="true" />
+              Feltöltési sor
+            </button>
+          )}
+          {!locked && can("reviews.read") && (
+            <button
+              className={`nav-item ${activeView === "reviews" ? "active" : ""}`}
+              onClick={() => {
+                setReviewOrigin("documents");
+                setActiveView("reviews");
+              }}
+            >
+              <FileSearch aria-hidden="true" />
+              Ellenőrzések
+            </button>
+          )}
+          {!locked && can("vrp.read") && (
+            <button
+              className={`nav-item ${activeView === "vrp" ? "active" : ""}`}
+              onClick={() => {
+                setSelectedVrpBatchId(null);
+                setActiveView("vrp");
+              }}
+            >
+              <FileSpreadsheet aria-hidden="true" />
+              VRP-import
+            </button>
+          )}
+          {!locked && can("email.read") && (
+            <button
+              className={`nav-item ${activeView === "email" ? "active" : ""}`}
+              onClick={() => setActiveView("email")}
+            >
+              <Mail aria-hidden="true" />
+              E-mail postafiók
+            </button>
+          )}
+          {!locked && can("plugins.read") && (
             <button
               className={`nav-item ${activeView === "plugins" ? "active" : ""}`}
               onClick={() => setActiveView("plugins")}
@@ -174,9 +216,19 @@ export default function Dashboard({ session, onLogout }: Props) {
               Pluginok
             </button>
           )}
+          <button
+            className={`nav-item ${activeView === "identity" ? "active" : ""}`}
+            onClick={() => setActiveView("identity")}
+          >
+            <UserCog aria-hidden="true" />
+            Felhasználók és biztonság
+          </button>
         </nav>
         <div className="sidebar-footer">
-          <button className="nav-item muted" title="Későbbi kiadás">
+          <button
+            className="nav-item muted"
+            onClick={() => setActiveView("identity")}
+          >
             <Settings aria-hidden="true" />
             Beállítások
           </button>
@@ -186,7 +238,7 @@ export default function Dashboard({ session, onLogout }: Props) {
             </span>
             <span>
               <strong>{session.user.full_name}</strong>
-              <small>{session.user.role}</small>
+              <small>{session.user.roles?.join(", ") || session.user.role}</small>
             </span>
             <LogOut aria-label="Kijelentkezés" />
           </button>
@@ -194,9 +246,31 @@ export default function Dashboard({ session, onLogout }: Props) {
       </aside>
 
       <main className="workspace">
-        {activeView === "documents" ? (
+        {activeView === "identity" ? (
+          <Suspense fallback={<div className="empty-state">Identity betöltése…</div>}>
+            <IdentityPage
+              session={session}
+              onSessionUpdated={onSessionUpdated}
+            />
+          </Suspense>
+        ) : activeView === "uploads" ? (
+          <Suspense fallback={<div className="empty-state">Feltöltési sor betöltése…</div>}>
+            <UploadQueuePage
+              organizationId={session.user.organization_id}
+              permissions={permissions}
+              onOpenResult={(upload) => {
+                if (upload.result_entity_type === "vrp_import_batch") {
+                  setSelectedVrpBatchId(upload.result_entity_id);
+                  setActiveView("vrp");
+                } else {
+                  setActiveView("documents");
+                }
+              }}
+            />
+          </Suspense>
+        ) : activeView === "documents" ? (
           <DocumentsPage
-            onUpload={() => setDocumentDialog(true)}
+            onUpload={() => setActiveView("uploads")}
             onOpenReviews={() => {
               setReviewOrigin("documents");
               setActiveView("reviews");
@@ -253,20 +327,24 @@ export default function Dashboard({ session, onLogout }: Props) {
                 <h1>Készletáttekintés</h1>
               </div>
               <div className="header-actions">
-                <button
-                  className="secondary-button"
-                  onClick={() => setStockMode("receive")}
-                >
-                  <ArrowDownToLine aria-hidden="true" />
-                  Bevételezés
-                </button>
-                <button
-                  className="primary-button"
-                  onClick={() => setProductDialog(true)}
-                >
-                  <PackagePlus aria-hidden="true" />
-                  Új termék
-                </button>
+                {can("stock.receive") && (
+                  <button
+                    className="secondary-button"
+                    onClick={() => setStockMode("receive")}
+                  >
+                    <ArrowDownToLine aria-hidden="true" />
+                    Bevételezés
+                  </button>
+                )}
+                {can("products.write") && (
+                  <button
+                    className="primary-button"
+                    onClick={() => setProductDialog(true)}
+                  >
+                    <PackagePlus aria-hidden="true" />
+                    Új termék
+                  </button>
+                )}
               </div>
             </header>
 
@@ -305,28 +383,45 @@ export default function Dashboard({ session, onLogout }: Props) {
                 <h2>Mit szeretnél rögzíteni?</h2>
               </div>
               <div className="quick-actions">
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setStockMode("receive")}
-                >
-                  <ArrowDownToLine aria-hidden="true" />
-                  <span>
-                    <strong>Áru érkezett</strong>
-                    <small>Készlet növelése</small>
-                  </span>
-                  <ChevronRight aria-hidden="true" />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveView("inventory")}
-                >
-                  <ClipboardCheck aria-hidden="true" />
-                  <span>
-                    <strong>Készletet számoltam</strong>
-                    <small>Eltérés rögzítése</small>
-                  </span>
-                  <ChevronRight aria-hidden="true" />
-                </motion.button>
+                {can("stock.receive") && (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setStockMode("receive")}
+                  >
+                    <ArrowDownToLine aria-hidden="true" />
+                    <span>
+                      <strong>Áru érkezett</strong>
+                      <small>Készlet növelése</small>
+                    </span>
+                    <ChevronRight aria-hidden="true" />
+                  </motion.button>
+                )}
+                {can("inventory.count") && (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveView("inventory")}
+                  >
+                    <ClipboardCheck aria-hidden="true" />
+                    <span>
+                      <strong>Készletet számoltam</strong>
+                      <small>Eltérés rögzítése</small>
+                    </span>
+                    <ChevronRight aria-hidden="true" />
+                  </motion.button>
+                )}
+                {(can("documents.upload") || can("vrp.upload")) && (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveView("uploads")}
+                  >
+                    <CloudUpload aria-hidden="true" />
+                    <span>
+                      <strong>Fájlt töltök fel</strong>
+                      <small>Offline is sorba állítható</small>
+                    </span>
+                    <ChevronRight aria-hidden="true" />
+                  </motion.button>
+                )}
               </div>
             </section>
 
@@ -431,59 +526,79 @@ export default function Dashboard({ session, onLogout }: Props) {
         )}
       </main>
 
-      <nav
-        className={`mobile-actions ${
-          ["admin", "manager"].includes(session.user.role) ? "eight" : "seven"
-        }`}
-        aria-label="Mobil gyorsműveletek"
-      >
-        <button
-          className={activeView === "overview" ? "accent" : ""}
-          onClick={() => setActiveView("overview")}
-        >
-          <Home aria-hidden="true" />
-          Kezdő
-        </button>
-        <button onClick={() => setStockMode("receive")}>
-          <ArrowDownToLine aria-hidden="true" />
-          Bevétel
-        </button>
-        <button
-          className={activeView === "inventory" ? "accent" : ""}
-          onClick={() => setActiveView("inventory")}
-        >
-          <ClipboardList aria-hidden="true" />
-          Leltár
-        </button>
-        <button
-          className={["documents", "receipt"].includes(activeView) ? "accent" : ""}
-          onClick={() => setActiveView("documents")}
-        >
-          <FileText aria-hidden="true" />
-          Iratok
-        </button>
-        <button
-          className={activeView === "email" ? "accent" : ""}
-          onClick={() => setActiveView("email")}
-        >
-          <Mail aria-hidden="true" />
-          E-mail
-        </button>
-        <button
-          className={activeView === "vrp" ? "accent" : ""}
-          onClick={() => {
-            setSelectedVrpBatchId(null);
-            setActiveView("vrp");
-          }}
-        >
-          <FileSpreadsheet aria-hidden="true" />
-          VRP
-        </button>
-        <button onClick={() => setProductDialog(true)}>
-          <PackagePlus aria-hidden="true" />
-          Termék
-        </button>
-        {["admin", "manager"].includes(session.user.role) && (
+      <nav className="mobile-actions many" aria-label="Mobil gyorsműveletek">
+        {!locked && can("stock.read") && (
+          <button
+            className={activeView === "overview" ? "accent" : ""}
+            onClick={() => setActiveView("overview")}
+          >
+            <Home aria-hidden="true" />
+            Kezdő
+          </button>
+        )}
+        {!locked && can("stock.receive") && (
+          <button onClick={() => setStockMode("receive")}>
+            <ArrowDownToLine aria-hidden="true" />
+            Bevétel
+          </button>
+        )}
+        {!locked && can("inventory.count") && (
+          <button
+            className={activeView === "inventory" ? "accent" : ""}
+            onClick={() => setActiveView("inventory")}
+          >
+            <ClipboardList aria-hidden="true" />
+            Leltár
+          </button>
+        )}
+        {!locked && (can("documents.upload") || can("vrp.upload")) && (
+          <button
+            className={activeView === "uploads" ? "accent" : ""}
+            onClick={() => setActiveView("uploads")}
+          >
+            <CloudUpload aria-hidden="true" />
+            Feltöltés
+          </button>
+        )}
+        {!locked && can("documents.read") && (
+          <button
+            className={
+              ["documents", "receipt"].includes(activeView) ? "accent" : ""
+            }
+            onClick={() => setActiveView("documents")}
+          >
+            <FileText aria-hidden="true" />
+            Iratok
+          </button>
+        )}
+        {!locked && can("email.read") && (
+          <button
+            className={activeView === "email" ? "accent" : ""}
+            onClick={() => setActiveView("email")}
+          >
+            <Mail aria-hidden="true" />
+            E-mail
+          </button>
+        )}
+        {!locked && can("vrp.read") && (
+          <button
+            className={activeView === "vrp" ? "accent" : ""}
+            onClick={() => {
+              setSelectedVrpBatchId(null);
+              setActiveView("vrp");
+            }}
+          >
+            <FileSpreadsheet aria-hidden="true" />
+            VRP
+          </button>
+        )}
+        {!locked && can("products.write") && (
+          <button onClick={() => setProductDialog(true)}>
+            <PackagePlus aria-hidden="true" />
+            Termék
+          </button>
+        )}
+        {!locked && can("plugins.read") && (
           <button
             className={activeView === "plugins" ? "accent" : ""}
             onClick={() => setActiveView("plugins")}
@@ -492,13 +607,16 @@ export default function Dashboard({ session, onLogout }: Props) {
             Plugin
           </button>
         )}
+        <button
+          className={activeView === "identity" ? "accent" : ""}
+          onClick={() => setActiveView("identity")}
+        >
+          <UserCog aria-hidden="true" />
+          Biztonság
+        </button>
       </nav>
 
       <ProductDialog open={productDialog} onOpenChange={setProductDialog} />
-      <DocumentUploadDialog
-        open={documentDialog}
-        onOpenChange={setDocumentDialog}
-      />
       <StockDialog
         key={stockMode ?? "closed"}
         mode={stockMode ?? "receive"}

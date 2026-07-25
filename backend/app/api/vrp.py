@@ -15,7 +15,7 @@ from fastapi import (
 )
 from sqlalchemy import select
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import Plugin, VrpImportBatch, VrpImportSchedule
 from app.schemas import (
     VrpImportBatchRead,
@@ -43,13 +43,20 @@ from app.services.vrp_imports import (
 )
 
 router = APIRouter(prefix="/vrp", tags=["vrp imports"])
-VrpOperator = Annotated[object, Depends(require_roles("admin", "manager"))]
-VrpAdmin = Annotated[object, Depends(require_roles("admin"))]
+VrpReader = Annotated[object, Depends(require_permissions("vrp.read"))]
+VrpUploader = Annotated[object, Depends(require_permissions("vrp.upload"))]
+VrpProcessor = Annotated[object, Depends(require_permissions("vrp.process"))]
+VrpSettingsAdmin = Annotated[object, Depends(require_permissions("vrp.settings"))]
+VrpReverser = Annotated[
+    object,
+    Depends(require_permissions("vrp.process", "stock.reverse")),
+]
 
 
 def require_vrp_plugin_enabled(
     session: DbSession,
     user: CurrentUser,
+    _: VrpReader,
 ) -> object:
     plugin = session.scalar(
         select(Plugin).where(
@@ -177,7 +184,7 @@ def list_vrp_imports(
 def upload_vrp_import(
     session: DbSession,
     user: CurrentUser,
-    _: VrpOperator,
+    _: VrpUploader,
     _plugin: VrpPluginEnabled,
     file: Annotated[UploadFile, File(description="VRP2 Report predaja")],
     period_start: Annotated[date, Form()],
@@ -206,6 +213,7 @@ def get_vrp_import(
     batch_id: str,
     session: DbSession,
     user: CurrentUser,
+    _: VrpReader,
 ) -> VrpImportBatch:
     try:
         return VrpImportService(session).get_batch(user.organization_id, batch_id)
@@ -223,7 +231,7 @@ def update_vrp_item(
     payload: VrpImportItemUpdate,
     session: DbSession,
     user: CurrentUser,
-    _: VrpOperator,
+    _: VrpProcessor,
     _plugin: VrpPluginEnabled,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportBatch:
@@ -249,7 +257,7 @@ def process_vrp_import(
     batch_id: str,
     session: DbSession,
     user: CurrentUser,
-    _: VrpOperator,
+    _: VrpProcessor,
     _plugin: VrpPluginEnabled,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportBatch:
@@ -274,7 +282,7 @@ def reverse_vrp_import(
     payload: VrpImportReverse,
     session: DbSession,
     user: CurrentUser,
-    _: VrpAdmin,
+    _: VrpReverser,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportBatch:
     try:
@@ -293,6 +301,7 @@ def reverse_vrp_import(
 def get_vrp_schedule(
     session: DbSession,
     user: CurrentUser,
+    _: VrpReader,
 ) -> VrpImportSchedule:
     return VrpImportService(session).get_schedule(user.organization_id)
 
@@ -302,7 +311,7 @@ def update_vrp_schedule(
     payload: VrpScheduleUpdate,
     session: DbSession,
     user: CurrentUser,
-    _: VrpAdmin,
+    _: VrpSettingsAdmin,
     _plugin: VrpPluginEnabled,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> VrpImportSchedule:

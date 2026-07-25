@@ -4,7 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import Product, StockBalance, StockMovement
 from app.schemas import (
     ReversalRequest,
@@ -23,7 +23,10 @@ from app.services.stock import (
 )
 
 router = APIRouter(prefix="/stock", tags=["stock"])
-StockEditor = Annotated[object, Depends(require_roles("admin", "manager", "warehouse"))]
+StockReader = Annotated[object, Depends(require_permissions("stock.read"))]
+StockReceiver = Annotated[object, Depends(require_permissions("stock.receive"))]
+StockCorrector = Annotated[object, Depends(require_permissions("stock.correct"))]
+StockReverser = Annotated[object, Depends(require_permissions("stock.reverse"))]
 
 
 def _correlation_id(value: str | None) -> str:
@@ -61,6 +64,7 @@ def _map_stock_error(exc: Exception) -> HTTPException:
 def list_stock(
     session: DbSession,
     user: CurrentUser,
+    _: StockReader,
     low_stock_only: bool = Query(default=False),
 ) -> list[StockBalanceRead]:
     statement = (
@@ -99,7 +103,7 @@ def receive_stock(
     payload: StockOperation,
     session: DbSession,
     user: CurrentUser,
-    _: StockEditor,
+    _: StockReceiver,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8)],
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> StockMovement:
@@ -125,7 +129,7 @@ def correct_stock(
     payload: StockCorrection,
     session: DbSession,
     user: CurrentUser,
-    _: StockEditor,
+    _: StockCorrector,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8)],
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> StockMovement:
@@ -155,7 +159,7 @@ def reverse_movement(
     payload: ReversalRequest,
     session: DbSession,
     user: CurrentUser,
-    _: Annotated[object, Depends(require_roles("admin", "manager"))],
+    _: StockReverser,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8)],
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> StockMovement:
@@ -179,6 +183,7 @@ def stock_detail(
     product_id: str,
     session: DbSession,
     user: CurrentUser,
+    _: StockReader,
     movement_limit: int = Query(default=50, ge=1, le=200),
 ) -> StockProductDetail:
     row = session.execute(

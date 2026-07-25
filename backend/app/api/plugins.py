@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import Plugin
 from app.plugins.manifest import PluginManifest
 from app.schemas import (
@@ -29,8 +29,8 @@ from app.services.plugins import (
 )
 
 router = APIRouter(prefix="/plugins", tags=["plugins"])
-PluginViewer = Annotated[object, Depends(require_roles("admin", "manager"))]
-PluginAdmin = Annotated[object, Depends(require_roles("admin"))]
+PluginViewer = Annotated[object, Depends(require_permissions("plugins.read"))]
+PluginAdmin = Annotated[object, Depends(require_permissions("plugins.manage"))]
 
 
 def _correlation_id(value: str | None) -> str:

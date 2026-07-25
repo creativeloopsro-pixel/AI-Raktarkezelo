@@ -5,18 +5,6 @@ tételeket tartalmazza. Egy tétel csak akkor kerül le a listáról, ha a
 megvalósítás, az adatbázis-migráció, a szükséges API és felület, valamint az
 automatizált ellenőrzés is elkészült.
 
-## Mobil PWA és kézi leltár
-
-- Dokumentum- és VRP-fájlfeltöltések offline várólistája, megszakítható és
-  folytatható feltöltéssel.
-
-## Identity és részletes jogosultságok
-
-- Szerepkör-, jogosultság- és felhasználó-szerepkör táblák.
-- Felhasználó-adminisztráció és finom szemcsézettségű engedélyellenőrzés.
-- Adminisztrátori MFA, helyreállító kódok és munkamenet-védelem.
-- Hatókörhöz kötött, visszavonható API-tokenek.
-
 ## Riportok és értesítések
 
 - Napi nem pénzügyi készlet-PDF létrehozása és archiválása.

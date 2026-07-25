@@ -4,6 +4,11 @@ export type User = {
   email: string;
   full_name: string;
   role: string;
+  role_ids: string[];
+  roles: string[];
+  permissions: string[];
+  mfa_enabled: boolean;
+  mfa_required: boolean;
 };
 
 export type Session = {
@@ -12,6 +17,106 @@ export type Session = {
   token_type: string;
   expires_in: number;
   user: User;
+  mfa_setup_required: boolean;
+};
+
+export type MfaChallenge = {
+  mfa_required: true;
+  challenge_token: string;
+  expires_in: number;
+};
+
+export type MfaSetup = {
+  secret: string;
+  otpauth_uri: string;
+};
+
+export type RefreshSessionItem = {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  mfa_verified: boolean;
+  user_agent: string;
+  ip_address: string;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+  current: boolean;
+};
+
+export type PermissionItem = {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+};
+
+export type IdentityRole = {
+  id: string;
+  organization_id: string;
+  name: string;
+  slug: string;
+  description: string;
+  is_system: boolean;
+  permission_codes: string[];
+  user_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type IdentityUser = User & {
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ApiTokenItem = {
+  id: string;
+  name: string;
+  token_prefix: string;
+  scopes: string[];
+  expires_at: string | null;
+  last_used_at: string | null;
+  created_at: string;
+  revoked_at: string | null;
+};
+
+export type CreatedApiToken = {
+  token: ApiTokenItem;
+  raw_token: string;
+};
+
+export type ResumableUpload = {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  client_upload_id: string;
+  target_type: "DOCUMENT" | "VRP";
+  filename: string;
+  declared_content_type: string | null;
+  total_size: number;
+  chunk_size: number;
+  total_chunks: number;
+  received_chunks: number[];
+  file_sha256: string | null;
+  upload_metadata: Record<string, unknown>;
+  status: string;
+  result_entity_type: string | null;
+  result_entity_id: string | null;
+  last_error_code: string | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  cancelled_at: string | null;
+};
+
+export type ResumableUploadResult = {
+  upload: ResumableUpload;
+  entity_type: string;
+  entity_id: string;
 };
 
 export type PackagingUnit = {

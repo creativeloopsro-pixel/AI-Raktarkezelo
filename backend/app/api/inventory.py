@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import InventorySession
 from app.schemas import (
     InventoryCancelRequest,
@@ -32,10 +32,10 @@ from app.services.inventory import (
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 InventoryOperator = Annotated[
-    object, Depends(require_roles("admin", "manager", "warehouse"))
+    object, Depends(require_permissions("inventory.count"))
 ]
 InventoryApprover = Annotated[
-    object, Depends(require_roles("admin", "manager"))
+    object, Depends(require_permissions("inventory.approve"))
 ]
 
 

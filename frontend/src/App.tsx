@@ -28,6 +28,10 @@ export default function App() {
   return (
     <Dashboard
       session={session}
+      onSessionUpdated={(nextSession) => {
+        saveSession(nextSession);
+        setSession(nextSession);
+      }}
       onLogout={() => {
         void logout().catch(() => undefined);
         clearSession();

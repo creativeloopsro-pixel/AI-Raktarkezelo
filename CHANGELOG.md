@@ -4,6 +4,54 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.8.0] - 2026-07-25
+
+### Hozzáadva
+
+- Szervezetenkénti `roles`, `permissions`, `role_permissions` és `user_roles`
+  adatmodell öt beépített szerepkörrel, egyedi szerepkörökkel és csoportosított
+  engedélykatalógussal.
+- Felhasználó-adminisztráció létrehozással, módosítással, aktiválással,
+  deaktiválással, jelszócserével és több szerepkör hozzárendelésével.
+- Engedélykód-alapú backend- és frontend-hozzáférés minden meglévő üzleti
+  modulhoz; a korábbi szerepkör-ellenőrzések finom szemcsézettségű szabályokra
+  cserélve.
+- Adminisztrátori TOTP MFA beállítási folyamattal, egyszer használható
+  helyreállító kódokkal és kétlépcsős bejelentkezési felülettel.
+- Eszköz- és munkamenetlista IP- és user-agent metaadattal, egyedi és összes
+  többi munkamenet visszavonásával.
+- Forgó refresh session token-családokkal és a már felhasznált refresh token
+  ismételt használatakor teljes család-visszavonással.
+- Csak egyszer megjelenített, szerveren HMAC-hashként tárolt, lejárathoz és
+  engedély-scope-hoz kötött, azonnal visszavonható API-tokenek.
+- IndexedDB-alapú dokumentum- és VRP-fájlvárólista offline tárolással,
+  szüneteltetéssel, folytatással, újrapróbálással és kapcsolat-visszatéréskori
+  automatikus szinkronnal.
+- Tenant-, felhasználó- és célhatárolt feltöltési munkamenetek idempotens,
+  SHA-256-tal ellenőrzött darabfeltöltéssel, teljes fájlhash-ellenőrzéssel és a
+  meglévő dokumentum-/VRP-pipeline-ba történő biztonságos átadással.
+- Nyolcadik Alembic-migráció, valamint MFA-, refresh-replay-, API-token-scope-,
+  jogosultság-, tenant- és folytatható feltöltési automatizált tesztek.
+
+### Biztonság
+
+- Adminisztrátori üzleti művelet csak beállított és az aktuális munkamenetben
+  ellenőrzött MFA-val végezhető; az MFA titka alkalmazásszintű titkosítással
+  kerül tárolásra.
+- A helyreállító kódok egyenként, hash-elve tárolódnak és sikeres használat után
+  azonnal érvénytelenné válnak.
+- A munkamenet visszavonása és a refresh-token újrahasználatának észlelése az
+  adott sessionhöz tartozó access tokent is azonnal érvényteleníti.
+- API-token nem kaphat a létrehozó felhasználóénál szélesebb hatókört, és minden
+  API-hívásnál a szerepkör-engedély és a token-scope egyaránt érvényesül.
+- A korábbi `plugin_service` fiókok migrációja és induláskori javítása
+  kizárólag a szűkített `service` szerepkört rendeli hozzájuk.
+- A feltöltési munkamenet nem olvasható vagy folytatható másik tenantból, másik
+  felhasználóként vagy a szükséges célengedély nélkül.
+- A kliens által deklarált fájltípus továbbra sem megbízható: az összeállított
+  fájl a meglévő méret-, magic-byte-, vírus-, duplikáció- és üzleti
+  validációkon halad át.
+
 ## [0.7.0] - 2026-07-25
 
 ### Hozzáadva

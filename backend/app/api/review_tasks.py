@@ -4,7 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy import select
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import ReviewTask
 from app.schemas import ReviewTaskRead, ReviewTaskResolve
 from app.services.documents import (
@@ -19,6 +19,7 @@ router = APIRouter(prefix="/review-tasks", tags=["review tasks"])
 def list_review_tasks(
     session: DbSession,
     user: CurrentUser,
+    _: Annotated[object, Depends(require_permissions("reviews.read"))],
     task_status: str = Query(default="OPEN", alias="status", max_length=32),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[ReviewTask]:
@@ -41,7 +42,7 @@ def resolve_review_task(
     payload: ReviewTaskResolve,
     session: DbSession,
     user: CurrentUser,
-    _: Annotated[object, Depends(require_roles("admin", "manager"))],
+    _: Annotated[object, Depends(require_permissions("reviews.resolve"))],
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> ReviewTask:
     try:

@@ -25,6 +25,11 @@ class UserSummary(ApiModel):
     email: str
     full_name: str
     role: str
+    role_ids: list[str] = Field(default_factory=list)
+    roles: list[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
+    mfa_enabled: bool = False
+    mfa_required: bool = False
 
 
 class TokenResponse(BaseModel):
@@ -33,6 +38,173 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserSummary
+    mfa_setup_required: bool = False
+
+
+class MfaChallengeResponse(BaseModel):
+    mfa_required: bool = True
+    challenge_token: str
+    expires_in: int
+
+
+class MfaVerifyRequest(BaseModel):
+    challenge_token: str = Field(min_length=32)
+    code: str = Field(min_length=6, max_length=24)
+
+
+class MfaSetupRead(BaseModel):
+    secret: str
+    otpauth_uri: str
+
+
+class MfaConfirmRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=12)
+
+
+class MfaConfirmResponse(BaseModel):
+    recovery_codes: list[str]
+    session: TokenResponse
+
+
+class MfaDisableRequest(BaseModel):
+    password: str = Field(min_length=8, max_length=200)
+    code: str = Field(min_length=6, max_length=24)
+
+
+class RefreshSessionRead(ApiModel):
+    id: str
+    user_id: str
+    organization_id: str
+    mfa_verified: bool
+    user_agent: str
+    ip_address: str
+    created_at: datetime
+    last_seen_at: datetime
+    expires_at: datetime
+    revoked_at: datetime | None
+    revoke_reason: str | None
+    current: bool = False
+
+
+class PermissionRead(ApiModel):
+    id: str
+    code: str
+    name: str
+    description: str
+    category: str
+
+
+class RoleCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    slug: str = Field(pattern=r"^[a-z][a-z0-9_-]{1,79}$")
+    description: str = Field(default="", max_length=500)
+    permission_codes: list[str] = Field(min_length=1, max_length=100)
+
+
+class RoleUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    description: str = Field(default="", max_length=500)
+    permission_codes: list[str] = Field(min_length=1, max_length=100)
+
+
+class RoleRead(ApiModel):
+    id: str
+    organization_id: str
+    name: str
+    slug: str
+    description: str
+    is_system: bool
+    permission_codes: list[str] = Field(default_factory=list)
+    user_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+
+class UserAdminCreate(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=2, max_length=160)
+    password: str = Field(min_length=12, max_length=200)
+    role_ids: list[str] = Field(min_length=1, max_length=20)
+
+
+class UserAdminUpdate(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=2, max_length=160)
+    role_ids: list[str] = Field(min_length=1, max_length=20)
+    is_active: bool
+    password: str | None = Field(default=None, min_length=12, max_length=200)
+
+
+class UserAdminRead(UserSummary):
+    is_active: bool
+    created_at: datetime
+
+
+class ApiTokenCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    scopes: list[str] = Field(min_length=1, max_length=100)
+    expires_at: datetime | None = None
+
+
+class ApiTokenRead(ApiModel):
+    id: str
+    name: str
+    token_prefix: str
+    scopes: list[str]
+    expires_at: datetime | None
+    last_used_at: datetime | None
+    created_at: datetime
+    revoked_at: datetime | None
+
+
+class ApiTokenCreated(BaseModel):
+    token: ApiTokenRead
+    raw_token: str
+
+
+class ResumableUploadCreate(BaseModel):
+    client_upload_id: str = Field(min_length=8, max_length=80)
+    target_type: Literal["DOCUMENT", "VRP"]
+    filename: str = Field(min_length=1, max_length=255)
+    declared_content_type: str | None = Field(default=None, max_length=160)
+    total_size: int = Field(gt=0)
+    file_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    metadata: dict[str, str | int | bool | None] = Field(default_factory=dict)
+
+
+class ResumableUploadRead(ApiModel):
+    id: str
+    organization_id: str
+    created_by: str
+    client_upload_id: str
+    target_type: str
+    filename: str
+    declared_content_type: str | None
+    total_size: int
+    chunk_size: int
+    total_chunks: int
+    received_chunks: list[int]
+    file_sha256: str | None
+    upload_metadata: dict
+    status: str
+    result_entity_type: str | None
+    result_entity_id: str | None
+    last_error_code: str | None
+    expires_at: datetime
+    created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None
+    cancelled_at: datetime | None
+
+
+class ResumableUploadComplete(BaseModel):
+    file_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
+
+class ResumableUploadResult(BaseModel):
+    upload: ResumableUploadRead
+    entity_type: str
+    entity_id: str
 
 
 class PackagingUnitInput(BaseModel):

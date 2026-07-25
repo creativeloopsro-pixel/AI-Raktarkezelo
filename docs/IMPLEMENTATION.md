@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.7.0 hatókör
+## 0.8.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -10,10 +10,18 @@ Ezen felül megvalósítja a hetedik fázis Plugin SDK-ját, közös
 eseményszerződését és adminisztrációs felületét.
 Megvalósítja továbbá a második fázis kamerás kódolvasását, dedikált
 leltármenetét és offline számlálási sorát.
+Az identity réteg ebben a kiadásban részletes, szervezetenként kezelhető
+szerepkör- és engedélymodellre bővült, adminisztrátori MFA-val, védett
+munkamenetekkel és hatókörhöz kötött API-tokenekkel. A dokumentum- és
+VRP-feltöltések IndexedDB-várólistát és darabolt, folytatható szerveroldali
+feltöltési munkamenetet kaptak.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
-| Identity | Szervezethez kötött felhasználó, RBAC-alap, JWT és refresh session |
+| Identity | Szervezethez kötött felhasználó, egyedi és rendszer-szerepkörök, finom engedélyek |
+| MFA | Adminisztrátori TOTP, egyszer használható helyreállító kódok és MFA-val védett munkamenet |
+| Sessions | Forgó refresh token, token-család újrahasználatának felismerése, eszközlista és visszavonás |
+| API token | Egyszer megjelenített titok, hash-elt tárolás, felhasználói engedélyekre szűkített scope és visszavonás |
 | Catalog | Termék, csomagolási egység, EAN/QR hozzárendelés |
 | Inventory | Egyenleg, append-only mozgás, idempotencia, korrekció, visszavonás |
 | Audit | Érzékeny műveletek append-only naplója correlation ID-val |
@@ -53,6 +61,8 @@ leltármenetét és offline számlálási sorát.
 | Kamerás kódolvasás | Natív `BarcodeDetector` EAN/UPC/Code 128/Data Matrix/QR támogatással és ZXing fallbackkel |
 | Kézi leltár | Megszakítható leltármenet, tételes abszolút számlálás, okkód és korrekciós főkönyv |
 | Offline számlálás | IndexedDB műveleti sor egyedi `client_operation_id` értékkel, szünettel és automatikus újraküldéssel |
+| Offline fájlfeltöltés | IndexedDB Blob-várólista, kliens- és darabhash, szünet/folytatás és automatikus újraküldés |
+| Resumable upload API | Tenant-, felhasználó- és célhatárolt munkamenet, idempotens darabok, végső SHA-256 és objektumtár |
 | Leltárjóváhagyás | Konfigurálható eltérésküszöb, review feladat és admin/manager jóváhagyás |
 | Mobil leltár PWA | Nagy számláló, +1/−1, kartonkód-szorzó, Bluetooth/kézi bevitel és offline állapot |
 
@@ -70,5 +80,5 @@ leltármenetét és offline számlálási sorát.
 
 ## Következő tervezett kiadás
 
-`0.8.0`: részletes szerepkör- és jogosultságmodell, felhasználó-adminisztráció,
-adminisztrátori MFA és visszavonható API-tokenek.
+`0.9.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
+rendszerállapot-értesítések.

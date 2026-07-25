@@ -4,6 +4,7 @@ from app.config import get_settings
 from app.database import SessionLocal
 from app.models import EmailInboundSettings, Organization, User
 from app.security import hash_password
+from app.services.identity import IdentityService
 from app.services.plugins import PluginService
 
 
@@ -28,20 +29,25 @@ def bootstrap() -> None:
             )
         )
         if admin is None:
-            session.add(
-                User(
-                    organization_id=organization.id,
-                    email=settings.bootstrap_admin_email.lower(),
-                    full_name="Rendszergazda",
-                    password_hash=hash_password(settings.bootstrap_admin_password),
-                    role="admin",
-                )
+            admin = User(
+                organization_id=organization.id,
+                email=settings.bootstrap_admin_email.lower(),
+                full_name="Rendszergazda",
+                password_hash=hash_password(settings.bootstrap_admin_password),
+                role="admin",
             )
+            session.add(admin)
+            session.flush()
+        IdentityService(session, settings=settings).ensure_organization(organization.id)
         inbound = session.get(EmailInboundSettings, organization.id)
         if inbound is None:
             session.add(EmailInboundSettings(organization_id=organization.id))
     with SessionLocal() as session:
         PluginService(session).ensure_all_builtin_plugins()
+        IdentityService(session, settings=settings).ensure_organization(
+            organization.id
+        )
+        session.commit()
 
 
 if __name__ == "__main__":

@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:8080"
     access_token_minutes: int = 15
     refresh_token_days: int = 14
+    mfa_challenge_minutes: int = 5
+    mfa_issuer: str = "AI Raktárkezelő"
+    mfa_enforce_admin: bool = False
+    resumable_upload_expiry_hours: int = Field(default=72, ge=1, le=720)
+    resumable_upload_chunk_mb: int = Field(default=1, ge=1, le=16)
     bootstrap_organization: str = "Mintabolt"
     bootstrap_organization_slug: str = "mintabolt"
     bootstrap_admin_email: str = "admin@example.com"

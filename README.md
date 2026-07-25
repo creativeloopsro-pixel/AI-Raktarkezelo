@@ -6,8 +6,8 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.7.0` - kamerás, offline-képes kézi leltár és auditált
-készletkorrekció.
+`0.8.0` - részletes jogosultságkezelés, adminisztrátori MFA, védett
+munkamenetek és folytatható offline fájlfeltöltés.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
@@ -39,6 +39,13 @@ IndexedDB offline sorba kerülnek, így megszakíthatók, folytathatók és
 idempotensen újraküldhetők. Lezáráskor az eltérések a központi
 `StockService` rétegen, auditált korrekcióként könyvelődnek; nagy eltérés
 vezetői jóváhagyást kér.
+Az Identity munkafelületen a szervezeti adminisztrátor felhasználókat, rendszer-
+és egyedi szerepköröket, finom engedélyeket, saját MFA-t és aktív
+munkameneteket kezelhet. Az API-tokenek kizárólag a létrehozó aktuális
+engedélyeinek részhalmazára adhatók ki, titkuk csak egyszer jelenik meg, és
+azonnal visszavonhatók. Az Offline feltöltések munkafelület dokumentum- és
+VRP-fájlokat tárol IndexedDB-ben, majd kapcsolat esetén hash-ellenőrzött
+darabokban folytatja a megszakított feltöltést.
 
 ## Gyors indítás Dockerrel
 
@@ -52,6 +59,8 @@ vezetői jóváhagyást kér.
 3. Nyisd meg a `http://localhost:8080` címet.
 4. Jelentkezz be az `.env` fájlban beállított szervezetazonosítóval, e-maillel
    és jelszóval.
+5. Az adminisztrátor első belépéskor állítsa be a hitelesítő alkalmazást, és
+   mentse el a csak egyszer megjelenő helyreállító kódokat.
 
 Az API dokumentációja: `http://localhost:8080/api/docs`.
 
@@ -132,6 +141,12 @@ raktáros nem könyvelhet közvetlenül; a rendszer review feladatot hoz létre
 admin vagy manager számára. A részletes folyamat és az offline működés:
 [`docs/INVENTORY_PWA.md`](docs/INVENTORY_PWA.md).
 
+## Identity és offline feltöltések
+
+A szerepkörök, engedélyek, MFA, munkamenetek, API-tokenek és a folytatható
+fájlfeltöltési protokoll leírása:
+[`docs/IDENTITY_AND_OFFLINE_UPLOADS.md`](docs/IDENTITY_AND_OFFLINE_UPLOADS.md).
+
 ## E-mailes dokumentumbeérkezés
 
 A felületen az **E-mail postafiók** menüpont mutatja az adott szervezet
@@ -199,4 +214,4 @@ npm run build
 - Minden átadott fejlesztési kör külön verziót kap.
 - A gyökér `VERSION`, a backend és a frontend verziója együtt változik.
 - Minden kiadás bekerül a `CHANGELOG.md` fájlba.
-- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.7.0`.
+- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.8.0`.

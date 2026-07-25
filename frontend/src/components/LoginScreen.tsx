@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Boxes, KeyRound, ShieldCheck } from "lucide-react";
 
-import { login } from "../lib/api";
+import { login, verifyMfa } from "../lib/api";
 import type { Session } from "../types";
 
 type Props = {
@@ -13,6 +13,8 @@ export default function LoginScreen({ onAuthenticated }: Props) {
   const [organization, setOrganization] = useState("mintabolt");
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
+  const [challengeToken, setChallengeToken] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -21,7 +23,17 @@ export default function LoginScreen({ onAuthenticated }: Props) {
     setBusy(true);
     setError("");
     try {
-      onAuthenticated(await login(organization, email, password));
+      if (challengeToken) {
+        onAuthenticated(await verifyMfa(challengeToken, mfaCode));
+      } else {
+        const result = await login(organization, email, password);
+        if ("mfa_required" in result) {
+          setChallengeToken(result.challenge_token);
+          setPassword("");
+          return;
+        }
+        onAuthenticated(result);
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "A belépés sikertelen.");
     } finally {
@@ -65,49 +77,89 @@ export default function LoginScreen({ onAuthenticated }: Props) {
         <div className="login-panel-heading">
           <KeyRound aria-hidden="true" />
           <div>
-            <h2>Belépés</h2>
-            <p>Add meg a szervezeted és a felhasználói fiókod.</p>
+            <h2>{challengeToken ? "MFA ellenőrzés" : "Belépés"}</h2>
+            <p>
+              {challengeToken
+                ? "Írd be a hitelesítő alkalmazás vagy egy helyreállító kód értékét."
+                : "Add meg a szervezeted és a felhasználói fiókod."}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <label>
-            Szervezet
-            <input
-              value={organization}
-              onChange={(event) => setOrganization(event.target.value)}
-              autoComplete="organization"
-              required
-            />
-          </label>
-          <label>
-            E-mail
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-          </label>
-          <label>
-            Jelszó
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              placeholder="Legalább 8 karakter"
-              required
-            />
-          </label>
+          {challengeToken ? (
+            <>
+              <label>
+                Egyszer használatos vagy helyreállító kód
+                <input
+                  value={mfaCode}
+                  onChange={(event) => setMfaCode(event.target.value)}
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  placeholder="123456"
+                  autoFocus
+                  required
+                />
+              </label>
+              <button
+                className="text-button login-switch-account"
+                type="button"
+                onClick={() => {
+                  setChallengeToken("");
+                  setMfaCode("");
+                  setError("");
+                }}
+              >
+                Másik fiókkal lépek be
+              </button>
+            </>
+          ) : (
+            <>
+              <label>
+                Szervezet
+                <input
+                  value={organization}
+                  onChange={(event) => setOrganization(event.target.value)}
+                  autoComplete="organization"
+                  required
+                />
+              </label>
+              <label>
+                E-mail
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </label>
+              <label>
+                Jelszó
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Legalább 8 karakter"
+                  required
+                />
+              </label>
+            </>
+          )}
           {error && <p className="form-error">{error}</p>}
           <button className="primary-button login-button" type="submit" disabled={busy}>
-            <span>{busy ? "Ellenőrzés…" : "Belépés a raktárba"}</span>
+            <span>
+              {busy
+                ? "Ellenőrzés…"
+                : challengeToken
+                  ? "MFA megerősítése"
+                  : "Belépés a raktárba"}
+            </span>
             <ArrowRight aria-hidden="true" />
           </button>
         </form>
-        <p className="version-label">Rendszerverzió 0.7.0</p>
+        <p className="version-label">Rendszerverzió 0.8.0</p>
       </motion.section>
     </main>
   );

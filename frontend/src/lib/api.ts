@@ -1,4 +1,6 @@
 import type {
+  ApiTokenItem,
+  CreatedApiToken,
   DocumentItem,
   EmailInboundSettings,
   EmailInboundSettingsUpdate,
@@ -6,12 +8,20 @@ import type {
   InboundEmail,
   InventoryCountPayload,
   InventorySession,
+  IdentityRole,
+  IdentityUser,
+  MfaChallenge,
+  MfaSetup,
+  PermissionItem,
   PluginItem,
   PluginJob,
   PluginOverview,
   Product,
   ProductCreate,
   ReviewTask,
+  RefreshSessionItem,
+  ResumableUpload,
+  ResumableUploadResult,
   Session,
   StockBalance,
   VrpImportBatch,
@@ -24,10 +34,12 @@ let refreshPromise: Promise<Session> | null = null;
 
 export class ApiError extends Error {
   status: number;
+  code: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code = "request_failed") {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -35,7 +47,12 @@ export function readSession(): Session | null {
   const serialized = localStorage.getItem(SESSION_KEY);
   if (!serialized) return null;
   try {
-    return JSON.parse(serialized) as Session;
+    const parsed = JSON.parse(serialized) as Session;
+    if (!Array.isArray(parsed.user?.permissions)) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     localStorage.removeItem(SESSION_KEY);
     return null;
@@ -57,7 +74,12 @@ async function request<T>(
 ): Promise<T> {
   const execute = (session: Session | null) => {
     const headers = new Headers(options.headers);
-    if (!(options.body instanceof FormData)) {
+    if (
+      options.body !== undefined &&
+      !(options.body instanceof FormData) &&
+      !(options.body instanceof Blob) &&
+      !(options.body instanceof ArrayBuffer)
+    ) {
       headers.set("Content-Type", "application/json");
     }
     headers.set("X-Correlation-ID", crypto.randomUUID());
@@ -81,7 +103,7 @@ async function request<T>(
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as
-      | { detail?: { message?: string } | string }
+      | { detail?: { message?: string; code?: string } | string }
       | null;
     const message =
       typeof payload?.detail === "string"
@@ -91,7 +113,11 @@ async function request<T>(
       clearSession();
       window.dispatchEvent(new Event("session-expired"));
     }
-    throw new ApiError(message, response.status);
+    const code =
+      typeof payload?.detail === "object"
+        ? payload.detail.code ?? "request_failed"
+        : "request_failed";
+    throw new ApiError(message, response.status, code);
   }
   if (response.status === 204) {
     return undefined as T;
@@ -123,8 +149,8 @@ export function login(
   organizationSlug: string,
   email: string,
   password: string
-): Promise<Session> {
-  return request<Session>(
+): Promise<Session | MfaChallenge> {
+  return request<Session | MfaChallenge>(
     "/auth/login",
     {
       method: "POST",
@@ -136,6 +162,48 @@ export function login(
     },
     false
   );
+}
+
+export function verifyMfa(
+  challengeToken: string,
+  code: string
+): Promise<Session> {
+  return request<Session>(
+    "/auth/mfa/verify",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        challenge_token: challengeToken,
+        code
+      })
+    },
+    false
+  );
+}
+
+export function setupMfa(): Promise<MfaSetup> {
+  return request<MfaSetup>("/auth/mfa/setup", { method: "POST" });
+}
+
+export function confirmMfa(
+  code: string
+): Promise<{ recovery_codes: string[]; session: Session }> {
+  return request("/auth/mfa/confirm", {
+    method: "POST",
+    body: JSON.stringify({ code })
+  });
+}
+
+export function getRefreshSessions(): Promise<RefreshSessionItem[]> {
+  return request<RefreshSessionItem[]>("/auth/sessions");
+}
+
+export function revokeRefreshSession(sessionId: string): Promise<void> {
+  return request(`/auth/sessions/${sessionId}`, { method: "DELETE" });
+}
+
+export function revokeOtherSessions(): Promise<void> {
+  return request("/auth/sessions/revoke-others", { method: "POST" });
 }
 
 export async function logout(): Promise<void> {
@@ -514,5 +582,156 @@ export function installPlugin(
   return request<PluginItem>("/plugins/install", {
     method: "POST",
     body: JSON.stringify(manifest)
+  });
+}
+
+export function getIdentityPermissions(): Promise<PermissionItem[]> {
+  return request<PermissionItem[]>("/identity/permissions");
+}
+
+export function getIdentityRoles(): Promise<IdentityRole[]> {
+  return request<IdentityRole[]>("/identity/roles");
+}
+
+export function createIdentityRole(payload: {
+  name: string;
+  slug: string;
+  description: string;
+  permission_codes: string[];
+}): Promise<IdentityRole> {
+  return request<IdentityRole>("/identity/roles", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateIdentityRole(
+  roleId: string,
+  payload: {
+    name: string;
+    description: string;
+    permission_codes: string[];
+  }
+): Promise<IdentityRole> {
+  return request<IdentityRole>(`/identity/roles/${roleId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function deleteIdentityRole(roleId: string): Promise<void> {
+  return request(`/identity/roles/${roleId}`, { method: "DELETE" });
+}
+
+export function getIdentityUsers(): Promise<IdentityUser[]> {
+  return request<IdentityUser[]>("/identity/users");
+}
+
+export function createIdentityUser(payload: {
+  email: string;
+  full_name: string;
+  password: string;
+  role_ids: string[];
+}): Promise<IdentityUser> {
+  return request<IdentityUser>("/identity/users", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function updateIdentityUser(
+  userId: string,
+  payload: {
+    email: string;
+    full_name: string;
+    role_ids: string[];
+    is_active: boolean;
+    password: string | null;
+  }
+): Promise<IdentityUser> {
+  return request<IdentityUser>(`/identity/users/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getApiTokens(): Promise<ApiTokenItem[]> {
+  return request<ApiTokenItem[]>("/identity/tokens");
+}
+
+export function createApiToken(payload: {
+  name: string;
+  scopes: string[];
+  expires_at: string | null;
+}): Promise<CreatedApiToken> {
+  return request<CreatedApiToken>("/identity/tokens", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function revokeApiToken(tokenId: string): Promise<ApiTokenItem> {
+  return request<ApiTokenItem>(`/identity/tokens/${tokenId}`, {
+    method: "DELETE"
+  });
+}
+
+export function createResumableUpload(payload: {
+  client_upload_id: string;
+  target_type: "DOCUMENT" | "VRP";
+  filename: string;
+  declared_content_type: string | null;
+  total_size: number;
+  file_sha256: string | null;
+  metadata: Record<string, string | number | boolean | null>;
+}): Promise<ResumableUpload> {
+  return request<ResumableUpload>("/uploads", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function getResumableUploads(
+  targetType: "DOCUMENT" | "VRP"
+): Promise<ResumableUpload[]> {
+  return request<ResumableUpload[]>(
+    `/uploads?target_type=${encodeURIComponent(targetType)}`
+  );
+}
+
+export function uploadResumableChunk(
+  uploadId: string,
+  chunkIndex: number,
+  chunk: Blob,
+  chunkSha256: string
+): Promise<ResumableUpload> {
+  return request<ResumableUpload>(
+    `/uploads/${uploadId}/chunks/${chunkIndex}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Chunk-SHA256": chunkSha256
+      },
+      body: chunk
+    }
+  );
+}
+
+export function completeResumableUpload(
+  uploadId: string,
+  fileSha256: string
+): Promise<ResumableUploadResult> {
+  return request<ResumableUploadResult>(`/uploads/${uploadId}/complete`, {
+    method: "POST",
+    body: JSON.stringify({ file_sha256: fileSha256 })
+  });
+}
+
+export function cancelResumableUpload(
+  uploadId: string
+): Promise<ResumableUpload> {
+  return request<ResumableUpload>(`/uploads/${uploadId}`, {
+    method: "DELETE"
   });
 }

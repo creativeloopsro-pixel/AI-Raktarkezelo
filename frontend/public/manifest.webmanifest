@@ -21,6 +21,19 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Offline feltöltések",
+      "short_name": "Feltöltések",
+      "description": "Dokumentum- és VRP-fájlok helyi várólistája",
+      "url": "/?view=uploads",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ],
   "icons": [

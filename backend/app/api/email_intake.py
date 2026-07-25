@@ -4,7 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 
 from app.config import Settings
-from app.dependencies import AppSettings, CurrentUser, DbSession, require_roles
+from app.dependencies import AppSettings, CurrentUser, DbSession, require_permissions
 from app.models import EmailInboundSettings, InboundEmail
 from app.queueing import dispatch_document_job
 from app.schemas import (
@@ -29,10 +29,13 @@ from app.services.email_intake import (
 
 router = APIRouter(prefix="/email", tags=["email intake"])
 EmailOperator = Annotated[
-    object, Depends(require_roles("admin", "manager", "warehouse"))
+    object, Depends(require_permissions("email.read"))
 ]
-EmailManager = Annotated[object, Depends(require_roles("admin", "manager"))]
-EmailAdmin = Annotated[object, Depends(require_roles("admin"))]
+EmailManager = Annotated[object, Depends(require_permissions("email.manage"))]
+EmailAdmin = Annotated[
+    object,
+    Depends(require_permissions("email.manage", "settings.write")),
+]
 
 
 def _correlation_id(value: str | None) -> str:

@@ -16,7 +16,7 @@ from fastapi import (
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy import or_, select
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import Document
 from app.queueing import dispatch_document_job
 from app.schemas import DocumentProcessingJobRead, DocumentRead
@@ -34,7 +34,9 @@ from app.services.documents import (
 from app.storage import get_object_storage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
-DocumentEditor = Annotated[object, Depends(require_roles("admin", "manager", "warehouse"))]
+DocumentReader = Annotated[object, Depends(require_permissions("documents.read"))]
+DocumentUploader = Annotated[object, Depends(require_permissions("documents.upload"))]
+DocumentProcessor = Annotated[object, Depends(require_permissions("documents.process"))]
 
 
 def _correlation_id(value: str | None) -> str:
@@ -111,7 +113,7 @@ def _document_error(exc: Exception) -> HTTPException:
 def list_documents(
     session: DbSession,
     user: CurrentUser,
-    _: DocumentEditor,
+    _: DocumentReader,
     document_status: str | None = Query(default=None, alias="status", max_length=40),
     search: str | None = Query(default=None, max_length=120),
     limit: int = Query(default=100, ge=1, le=500),
@@ -134,7 +136,7 @@ def list_documents(
 def upload_document(
     session: DbSession,
     user: CurrentUser,
-    _: DocumentEditor,
+    _: DocumentUploader,
     file: Annotated[UploadFile, File(description="PDF, JPG, PNG vagy TIFF dokumentum")],
     document_type: Annotated[str, Form(max_length=60)] = "goods_receipt",
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
@@ -161,7 +163,7 @@ def queue_document_processing(
     document_id: str,
     session: DbSession,
     user: CurrentUser,
-    _: DocumentEditor,
+    _: DocumentProcessor,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8)],
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ):
@@ -185,6 +187,7 @@ def download_document(
     document_id: str,
     session: DbSession,
     user: CurrentUser,
+    _: DocumentReader,
 ) -> Response:
     document = session.scalar(
         select(Document).where(
@@ -221,7 +224,12 @@ def download_document(
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
-def get_document(document_id: str, session: DbSession, user: CurrentUser) -> Document:
+def get_document(
+    document_id: str,
+    session: DbSession,
+    user: CurrentUser,
+    _: DocumentReader,
+) -> Document:
     document = session.scalar(
         select(Document).where(
             Document.id == document_id,

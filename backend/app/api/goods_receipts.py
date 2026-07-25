@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import GoodsReceiptDraft
 from app.schemas import GoodsReceiptDraftRead, GoodsReceiptItemUpdate
 from app.services.goods_receipts import (
@@ -16,7 +16,8 @@ from app.services.goods_receipts import (
 )
 
 router = APIRouter(prefix="/goods-receipts", tags=["goods receipts"])
-ReceiptEditor = Annotated[object, Depends(require_roles("admin", "manager", "warehouse"))]
+ReceiptReader = Annotated[object, Depends(require_permissions("receipts.read"))]
+ReceiptConfirmer = Annotated[object, Depends(require_permissions("receipts.confirm"))]
 
 
 def _map_error(exc: GoodsReceiptError) -> HTTPException:
@@ -52,6 +53,7 @@ def get_receipt_by_document(
     document_id: str,
     session: DbSession,
     user: CurrentUser,
+    _: ReceiptReader,
 ) -> GoodsReceiptDraft:
     try:
         return GoodsReceiptService(session).get_by_document(
@@ -72,7 +74,7 @@ def update_receipt_item(
     payload: GoodsReceiptItemUpdate,
     session: DbSession,
     user: CurrentUser,
-    _: ReceiptEditor,
+    _: ReceiptConfirmer,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> GoodsReceiptDraft:
     try:
@@ -98,7 +100,7 @@ def confirm_receipt(
     draft_id: str,
     session: DbSession,
     user: CurrentUser,
-    _: ReceiptEditor,
+    _: ReceiptConfirmer,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> GoodsReceiptDraft:
     try:

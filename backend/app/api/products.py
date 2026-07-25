@@ -6,12 +6,13 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import CurrentUser, DbSession, require_roles
+from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import AuditLog, PackagingUnit, Product, ProductBarcode, StockBalance
 from app.schemas import ProductCreate, ProductRead
 
 router = APIRouter(prefix="/products", tags=["products"])
-CatalogEditor = Annotated[object, Depends(require_roles("admin", "manager"))]
+CatalogReader = Annotated[object, Depends(require_permissions("products.read"))]
+CatalogEditor = Annotated[object, Depends(require_permissions("products.write"))]
 
 
 def _product_query():
@@ -25,6 +26,7 @@ def _product_query():
 def list_products(
     session: DbSession,
     user: CurrentUser,
+    _: CatalogReader,
     search: str | None = Query(default=None, max_length=120),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[Product]:
@@ -125,7 +127,12 @@ def create_product(
 
 
 @router.get("/by-code/{code}", response_model=ProductRead)
-def get_product_by_code(code: str, session: DbSession, user: CurrentUser) -> Product:
+def get_product_by_code(
+    code: str,
+    session: DbSession,
+    user: CurrentUser,
+    _: CatalogReader,
+) -> Product:
     product = session.scalar(
         _product_query()
         .join(ProductBarcode)
@@ -145,7 +152,12 @@ def get_product_by_code(code: str, session: DbSession, user: CurrentUser) -> Pro
 
 
 @router.get("/{product_id}", response_model=ProductRead)
-def get_product(product_id: str, session: DbSession, user: CurrentUser) -> Product:
+def get_product(
+    product_id: str,
+    session: DbSession,
+    user: CurrentUser,
+    _: CatalogReader,
+) -> Product:
     product = session.scalar(
         _product_query().where(
             Product.id == product_id,
