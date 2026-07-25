@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.6.0 hatókör
+## 0.7.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -8,6 +8,8 @@ felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjai
 VRP-importját és a hatodik fázis e-mailes beérkeztetési csatornáját fedi le.
 Ezen felül megvalósítja a hetedik fázis Plugin SDK-ját, közös
 eseményszerződését és adminisztrációs felületét.
+Megvalósítja továbbá a második fázis kamerás kódolvasását, dedikált
+leltármenetét és offline számlálási sorát.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -48,6 +50,11 @@ eseményszerződését és adminisztrációs felületét.
 | Plugin failure isolation | Végleges hibánál review feladat, audit és `plugin.failed` esemény |
 | Plugin admin PWA | Manifesttelepítés, engedélyezés, jogosultságok, beállítások és futásnapló |
 | Beépített pluginok | AI, VRP és e-mail közös szerződésre vezetve, működő készletfigyelő mintával |
+| Kamerás kódolvasás | Natív `BarcodeDetector` EAN/UPC/Code 128/Data Matrix/QR támogatással és ZXing fallbackkel |
+| Kézi leltár | Megszakítható leltármenet, tételes abszolút számlálás, okkód és korrekciós főkönyv |
+| Offline számlálás | IndexedDB műveleti sor egyedi `client_operation_id` értékkel, szünettel és automatikus újraküldéssel |
+| Leltárjóváhagyás | Konfigurálható eltérésküszöb, review feladat és admin/manager jóváhagyás |
+| Mobil leltár PWA | Nagy számláló, +1/−1, kartonkód-szorzó, Bluetooth/kézi bevitel és offline állapot |
 
 ## Modulhatárok
 
@@ -63,5 +70,5 @@ eseményszerződését és adminisztrációs felületét.
 
 ## Következő tervezett kiadás
 
-`0.7.0`: mobil kamerás EAN/QR-olvasás, offline műveleti sor és dedikált,
-auditált kézi leltármenet.
+`0.8.0`: részletes szerepkör- és jogosultságmodell, felhasználó-adminisztráció,
+adminisztrátori MFA és visszavonható API-tokenek.

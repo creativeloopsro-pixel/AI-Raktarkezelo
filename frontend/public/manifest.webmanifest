@@ -8,6 +8,21 @@
   "start_url": "/",
   "scope": "/",
   "lang": "hu",
+  "shortcuts": [
+    {
+      "name": "Kézi leltár",
+      "short_name": "Leltár",
+      "description": "Kamerás EAN/QR számlálás indítása",
+      "url": "/?view=inventory",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/icon.svg",
@@ -17,4 +32,3 @@
     }
   ]
 }
-

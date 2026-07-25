@@ -51,6 +51,92 @@ export type StockBalance = {
   updated_at: string | null;
 };
 
+export type InventoryRecentMovement = {
+  id: string;
+  movement_type: string;
+  quantity_delta: string;
+  source_type: string;
+  created_at: string;
+};
+
+export type InventoryCount = {
+  id: string;
+  organization_id: string;
+  session_id: string;
+  product_id: string;
+  product_name: string;
+  internal_sku: string;
+  base_unit: string;
+  client_operation_id: string;
+  expected_quantity: string;
+  client_expected_quantity: string | null;
+  counted_quantity: string;
+  quantity_difference: string;
+  scanned_code: string | null;
+  reason_code: string | null;
+  reason_note: string | null;
+  recorded_by: string | null;
+  client_recorded_at: string;
+  created_at: string;
+  recent_movements: InventoryRecentMovement[];
+};
+
+export type InventoryCorrection = {
+  id: string;
+  organization_id: string;
+  session_id: string;
+  count_id: string;
+  product_id: string;
+  product_name: string;
+  movement_id: string;
+  expected_quantity: string;
+  counted_quantity: string;
+  quantity_delta: string;
+  reason_code: string;
+  reason_note: string | null;
+  created_by: string | null;
+  approved_by: string | null;
+  created_at: string;
+};
+
+export type InventorySession = {
+  id: string;
+  organization_id: string;
+  client_session_id: string;
+  name: string;
+  status: "OPEN" | "PENDING_APPROVAL" | "COMPLETED" | "CANCELLED";
+  approval_required: boolean;
+  started_by: string | null;
+  completed_by: string | null;
+  approved_by: string | null;
+  review_task_id: string | null;
+  completion_note: string | null;
+  started_at: string;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  updated_at: string;
+  counts: InventoryCount[];
+  corrections: InventoryCorrection[];
+};
+
+export type InventoryReasonCode =
+  | "PHYSICAL_COUNT"
+  | "DAMAGE"
+  | "SHRINKAGE"
+  | "DATA_ERROR"
+  | "OTHER";
+
+export type InventoryCountPayload = {
+  product_id: string;
+  counted_quantity: number;
+  client_operation_id: string;
+  client_recorded_at: string;
+  client_expected_quantity: number | null;
+  scanned_code: string | null;
+  reason_code: InventoryReasonCode | null;
+  reason_note: string | null;
+};
+
 export type ProductCreate = {
   name: string;
   internal_sku: string;

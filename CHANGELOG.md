@@ -4,6 +4,45 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.7.0] - 2026-07-25
+
+### Hozzáadva
+
+- Natív `BarcodeDetector` kamerás olvasó EAN-8, EAN-13, UPC-A, Code 128,
+  Data Matrix és QR formátumokhoz, automatikus ZXing böngészős fallbackkel.
+- Bluetooth olvasós és kézi kódbevitel, termékkeresés, valamint csomagolási
+  egységhez tartozó vonalkód alapegység-szorzójának automatikus alkalmazása.
+- Dedikált leltármenet `OPEN`, `PENDING_APPROVAL`, `COMPLETED` és `CANCELLED`
+  állapotokkal, tételes abszolút számlálással és legfrissebb számlálat
+  kiválasztásával.
+- `inventory_sessions`, `inventory_counts` és `stock_corrections` táblák,
+  szervezeti határokkal és kliensművelet-szintű adatbázis-idempotenciával.
+- IndexedDB-alapú offline számlálási sor, helyi termék- és készletpillanatkép,
+  szüneteltethető/folytatható szinkron és kapcsolat-visszatéréskor automatikus
+  újraküldés.
+- Mobil számláló nagy számmezővel, gyors +1/−1 műveletekkel, eltérésjelzéssel,
+  kötelező okkóddal és utolsó bevételezés/VRP/korrekció előzményekkel.
+- Tranzakciós leltárlezárás a központi `StockService` rétegen, külön
+  korrekciós rekordokkal, auditnaplóval és `inventory.corrected` eseménnyel.
+- Konfigurálható nagyeltérés-küszöb; raktárosi lezárásnál vezetői review
+  feladat, admin/manager jóváhagyási és elutasítási folyamat.
+- PWA gyorsindító a kézi leltárhoz és lusta kódbetöltés a mobil kezdőcsomag
+  méretének védelméhez.
+- Hetedik Alembic-migráció, leltár-idempotencia-, korrekció-, jóváhagyás-,
+  tenant-isolation- és API-életciklustesztek.
+
+### Biztonság
+
+- A kliens által küldött szervezetazonosító nem használható; minden
+  leltármenet, termék, kód, számlálás és korrekció a hitelesített tenanttal
+  szűrt.
+- A beszkennelt kódnak a kiválasztott termékhez kell tartoznia, a legfeljebb
+  harmincnapos offline időbélyeg és az okkód szerveroldali validációt kap.
+- Ismételt offline kézbesítés ugyanazzal a `client_operation_id` értékkel nem
+  hoz létre új számlálást vagy új készletmozgást.
+- Leltárkorrekció kizárólag a mozgásalapú készletfőkönyvön keresztül,
+  változtathatatlan előzményekkel történhet.
+
 ## [0.6.0] - 2026-07-25
 
 ### Hozzáadva

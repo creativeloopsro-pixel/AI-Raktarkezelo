@@ -5,6 +5,7 @@ from app.api import (
     documents,
     email_intake,
     goods_receipts,
+    inventory,
     plugins,
     products,
     review_tasks,
@@ -18,6 +19,7 @@ api_router.include_router(system.router)
 api_router.include_router(auth.router)
 api_router.include_router(products.router)
 api_router.include_router(stock.router)
+api_router.include_router(inventory.router)
 api_router.include_router(documents.router)
 api_router.include_router(review_tasks.router)
 api_router.include_router(goods_receipts.router)

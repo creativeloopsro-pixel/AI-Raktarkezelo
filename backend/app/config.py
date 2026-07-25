@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import lru_cache
 
 from pydantic import Field, SecretStr
@@ -75,6 +76,7 @@ class Settings(BaseSettings):
     plugin_dispatcher_poll_seconds: int = 5
     plugin_dispatch_batch_size: int = 100
     plugin_rate_limit_per_minute: int = 120
+    inventory_approval_threshold: Decimal = Decimal("100")
 
     @property
     def cors_origin_list(self) -> list[str]:

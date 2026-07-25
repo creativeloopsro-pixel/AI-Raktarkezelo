@@ -194,6 +194,167 @@ class StockMovement(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class InventorySession(Base):
+    __tablename__ = "inventory_sessions"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "client_session_id",
+            name="uq_inventory_session_org_client",
+        ),
+        Index(
+            "ix_inventory_session_org_status",
+            "organization_id",
+            "status",
+            "started_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    client_session_id: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(160))
+    status: Mapped[str] = mapped_column(String(32), default="OPEN")
+    approval_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    started_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    completed_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    approved_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    review_task_id: Mapped[str | None] = mapped_column(
+        ForeignKey("review_tasks.id", ondelete="SET NULL"), nullable=True
+    )
+    completion_note: Mapped[str | None] = mapped_column(
+        String(1000), nullable=True
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+    counts: Mapped[list[InventoryCount]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
+    corrections: Mapped[list[InventoryStockCorrection]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
+
+
+class InventoryCount(Base):
+    __tablename__ = "inventory_counts"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "client_operation_id",
+            name="uq_inventory_count_org_operation",
+        ),
+        Index(
+            "ix_inventory_count_session_product_recorded",
+            "session_id",
+            "product_id",
+            "client_recorded_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("inventory_sessions.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), index=True
+    )
+    client_operation_id: Mapped[str] = mapped_column(String(80))
+    expected_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    client_expected_quantity: Mapped[Decimal | None] = mapped_column(
+        Numeric(18, 3), nullable=True
+    )
+    counted_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    quantity_difference: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    scanned_code: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    reason_code: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    reason_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    recorded_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    client_recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+
+    session: Mapped[InventorySession] = relationship(back_populates="counts")
+    product: Mapped[Product] = relationship()
+    correction: Mapped[InventoryStockCorrection | None] = relationship(
+        back_populates="count"
+    )
+
+
+class InventoryStockCorrection(Base):
+    __tablename__ = "stock_corrections"
+    __table_args__ = (
+        UniqueConstraint("count_id", name="uq_stock_correction_count"),
+        Index(
+            "ix_stock_correction_org_created",
+            "organization_id",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("inventory_sessions.id", ondelete="CASCADE"), index=True
+    )
+    count_id: Mapped[str] = mapped_column(
+        ForeignKey("inventory_counts.id", ondelete="RESTRICT"), index=True
+    )
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("products.id", ondelete="RESTRICT"), index=True
+    )
+    movement_id: Mapped[str] = mapped_column(
+        ForeignKey("stock_movements.id", ondelete="RESTRICT"), unique=True
+    )
+    expected_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    counted_quantity: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    quantity_delta: Mapped[Decimal] = mapped_column(Numeric(18, 3))
+    reason_code: Mapped[str] = mapped_column(String(60))
+    reason_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    approved_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+
+    session: Mapped[InventorySession] = relationship(
+        back_populates="corrections"
+    )
+    count: Mapped[InventoryCount] = relationship(back_populates="correction")
+    product: Mapped[Product] = relationship()
+    movement: Mapped[StockMovement] = relationship()
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     __table_args__ = (Index("ix_audit_org_created", "organization_id", "created_at"),)

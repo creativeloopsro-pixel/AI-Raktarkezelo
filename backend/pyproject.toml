@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-raktar-api"
-version = "0.6.0"
+version = "0.7.0"
 description = "AI Raktárkezelő FastAPI backend"
 requires-python = ">=3.12"
 dependencies = [

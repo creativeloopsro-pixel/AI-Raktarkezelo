@@ -4,6 +4,8 @@ import type {
   EmailInboundSettingsUpdate,
   GoodsReceiptDraft,
   InboundEmail,
+  InventoryCountPayload,
+  InventorySession,
   PluginItem,
   PluginJob,
   PluginOverview,
@@ -155,6 +157,83 @@ export function getProducts(): Promise<Product[]> {
 
 export function getStock(): Promise<StockBalance[]> {
   return request<StockBalance[]>("/stock");
+}
+
+export function getProductByCode(code: string): Promise<Product> {
+  return request<Product>(`/products/by-code/${encodeURIComponent(code)}`);
+}
+
+export function getCurrentInventorySession(): Promise<InventorySession | null> {
+  return request<InventorySession | null>("/inventory/sessions/current");
+}
+
+export function getInventorySessions(): Promise<InventorySession[]> {
+  return request<InventorySession[]>("/inventory/sessions?limit=20");
+}
+
+export function startInventorySession(
+  name: string,
+  clientSessionId = crypto.randomUUID()
+): Promise<InventorySession> {
+  return request<InventorySession>("/inventory/sessions", {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+      client_session_id: clientSessionId
+    })
+  });
+}
+
+export function recordInventoryCount(
+  sessionId: string,
+  payload: InventoryCountPayload
+): Promise<InventorySession> {
+  return request<InventorySession>(
+    `/inventory/sessions/${sessionId}/counts`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }
+  );
+}
+
+export function completeInventorySession(
+  sessionId: string,
+  note: string
+): Promise<InventorySession> {
+  return request<InventorySession>(
+    `/inventory/sessions/${sessionId}/complete`,
+    {
+      method: "POST",
+      body: JSON.stringify({ note: note.trim() || null })
+    }
+  );
+}
+
+export function approveInventorySession(
+  sessionId: string,
+  note: string
+): Promise<InventorySession> {
+  return request<InventorySession>(
+    `/inventory/sessions/${sessionId}/approve`,
+    {
+      method: "POST",
+      body: JSON.stringify({ note: note.trim() || null })
+    }
+  );
+}
+
+export function cancelInventorySession(
+  sessionId: string,
+  note: string
+): Promise<InventorySession> {
+  return request<InventorySession>(
+    `/inventory/sessions/${sessionId}/cancel`,
+    {
+      method: "POST",
+      body: JSON.stringify({ note })
+    }
+  );
 }
 
 export function getDocuments(): Promise<DocumentItem[]> {

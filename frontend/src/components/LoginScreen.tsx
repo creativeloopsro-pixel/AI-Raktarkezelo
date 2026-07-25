@@ -107,7 +107,7 @@ export default function LoginScreen({ onAuthenticated }: Props) {
             <ArrowRight aria-hidden="true" />
           </button>
         </form>
-        <p className="version-label">Rendszerverzió 0.6.0</p>
+        <p className="version-label">Rendszerverzió 0.7.0</p>
       </motion.section>
     </main>
   );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -8,6 +8,7 @@ import {
   Boxes,
   ChevronRight,
   ClipboardCheck,
+  ClipboardList,
   FileSearch,
   FileSpreadsheet,
   FileText,
@@ -19,7 +20,6 @@ import {
   Puzzle,
   Search,
   Settings,
-  Warehouse
 } from "lucide-react";
 
 import { getProducts, getStock } from "../lib/api";
@@ -34,6 +34,8 @@ import ReviewTasksPage from "./ReviewTasksPage";
 import StockDialog from "./StockDialog";
 import VrpImportsPage from "./VrpImportsPage";
 
+const InventoryPage = lazy(() => import("./InventoryPage"));
+
 type Props = {
   session: Session;
   onLogout: () => void;
@@ -44,6 +46,7 @@ type WorkspaceView =
   | "documents"
   | "reviews"
   | "receipt"
+  | "inventory"
   | "vrp"
   | "email"
   | "plugins";
@@ -51,7 +54,11 @@ type WorkspaceView =
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
 export default function Dashboard({ session, onLogout }: Props) {
-  const [activeView, setActiveView] = useState<WorkspaceView>("overview");
+  const [activeView, setActiveView] = useState<WorkspaceView>(() =>
+    new URLSearchParams(window.location.search).get("view") === "inventory"
+      ? "inventory"
+      : "overview"
+  );
   const [search, setSearch] = useState("");
   const [productDialog, setProductDialog] = useState(false);
   const [documentDialog, setDocumentDialog] = useState(false);
@@ -97,7 +104,7 @@ export default function Dashboard({ session, onLogout }: Props) {
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.6.0</span>
+            <span>verzió 0.7.0</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
@@ -109,11 +116,11 @@ export default function Dashboard({ session, onLogout }: Props) {
             Áttekintés
           </button>
           <button
-            className="nav-item"
-            onClick={() => setActiveView("overview")}
+            className={`nav-item ${activeView === "inventory" ? "active" : ""}`}
+            onClick={() => setActiveView("inventory")}
           >
-            <Warehouse aria-hidden="true" />
-            Készlet
+            <ClipboardList aria-hidden="true" />
+            Kézi leltár
           </button>
           <button
             className="nav-item"
@@ -229,6 +236,13 @@ export default function Dashboard({ session, onLogout }: Props) {
           />
         ) : activeView === "email" ? (
           <EmailIntakePage role={session.user.role} />
+        ) : activeView === "inventory" ? (
+          <Suspense fallback={<div className="empty-state">Leltár betöltése…</div>}>
+            <InventoryPage
+              organizationId={session.user.organization_id}
+              role={session.user.role}
+            />
+          </Suspense>
         ) : activeView === "plugins" ? (
           <PluginsPage role={session.user.role} />
         ) : (
@@ -304,7 +318,7 @@ export default function Dashboard({ session, onLogout }: Props) {
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setStockMode("correct")}
+                  onClick={() => setActiveView("inventory")}
                 >
                   <ClipboardCheck aria-hidden="true" />
                   <span>
@@ -419,7 +433,7 @@ export default function Dashboard({ session, onLogout }: Props) {
 
       <nav
         className={`mobile-actions ${
-          ["admin", "manager"].includes(session.user.role) ? "seven" : "six"
+          ["admin", "manager"].includes(session.user.role) ? "eight" : "seven"
         }`}
         aria-label="Mobil gyorsműveletek"
       >
@@ -433,6 +447,13 @@ export default function Dashboard({ session, onLogout }: Props) {
         <button onClick={() => setStockMode("receive")}>
           <ArrowDownToLine aria-hidden="true" />
           Bevétel
+        </button>
+        <button
+          className={activeView === "inventory" ? "accent" : ""}
+          onClick={() => setActiveView("inventory")}
+        >
+          <ClipboardList aria-hidden="true" />
+          Leltár
         </button>
         <button
           className={["documents", "receipt"].includes(activeView) ? "accent" : ""}

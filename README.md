@@ -6,8 +6,8 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.6.0` - jogosultságalapú Plugin SDK, tartós esemény-dispatcher és
-adminisztrációs munkafelület.
+`0.7.0` - kamerás, offline-képes kézi leltár és auditált
+készletkorrekció.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
@@ -32,6 +32,13 @@ szolgáltatásfelhasználót, explicit engedélyeket és idempotens, tartós
 eseményfuttatást biztosít. A beépített AI-, VRP- és e-mail-modul ugyanazt a
 pluginszerződést használja; a mintaplugin és az adminisztrációs felület a
 fejlesztést és az üzemeltetést is támogatja.
+Az új kézi leltármenet Android Chrome-ban natív `BarcodeDetector` használatával,
+más modern böngészőkben ZXing fallbackkel olvas EAN-, UPC-, Code 128-,
+Data Matrix- és QR-kódot. A számlálások egyedi kliensművelet-azonosítóval
+IndexedDB offline sorba kerülnek, így megszakíthatók, folytathatók és
+idempotensen újraküldhetők. Lezáráskor az eltérések a központi
+`StockService` rétegen, auditált korrekcióként könyvelődnek; nagy eltérés
+vezetői jóváhagyást kér.
 
 ## Gyors indítás Dockerrel
 
@@ -112,6 +119,19 @@ handlerrel, minden deklarált jogosultság külön megadása után engedélyezhe
 A manifest, a host API, az eseményszerződés, a hibakezelés és a mintakód teljes
 leírása: [`docs/PLUGIN_SDK.md`](docs/PLUGIN_SDK.md).
 
+## Mobil kézi leltár
+
+A **Kézi leltár** menüpontban indítható számlálási menet. A kamera mellett
+Bluetooth olvasó, kézi kódbevitel és termékkeresés is használható. A
+csomagolási egységhez rendelt kartonkód automatikusan a megfelelő
+alapegység-szorzóval növeli a számlálást.
+
+Eltérésnél kötelező okkódot megadni. A
+`APP_INVENTORY_APPROVAL_THRESHOLD` értéknél nagyobb abszolút eltérést
+raktáros nem könyvelhet közvetlenül; a rendszer review feladatot hoz létre
+admin vagy manager számára. A részletes folyamat és az offline működés:
+[`docs/INVENTORY_PWA.md`](docs/INVENTORY_PWA.md).
+
 ## E-mailes dokumentumbeérkezés
 
 A felületen az **E-mail postafiók** menüpont mutatja az adott szervezet
@@ -179,4 +199,4 @@ npm run build
 - Minden átadott fejlesztési kör külön verziót kap.
 - A gyökér `VERSION`, a backend és a frontend verziója együtt változik.
 - Minden kiadás bekerül a `CHANGELOG.md` fájlba.
-- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.6.0`.
+- Stabil kiadás után az azonos nevű Git-tag készül, például `v0.7.0`.

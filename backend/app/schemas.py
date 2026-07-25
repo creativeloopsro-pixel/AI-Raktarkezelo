@@ -131,6 +131,106 @@ class StockProductDetail(BaseModel):
     movements: list[StockMovementRead]
 
 
+class InventorySessionCreate(BaseModel):
+    client_session_id: str = Field(min_length=8, max_length=80)
+    name: str = Field(default="Kézi leltár", min_length=2, max_length=160)
+
+
+class InventoryCountCreate(BaseModel):
+    product_id: str
+    counted_quantity: Decimal = Field(ge=0, decimal_places=3)
+    client_operation_id: str = Field(min_length=8, max_length=80)
+    client_recorded_at: datetime
+    client_expected_quantity: Decimal | None = Field(
+        default=None, decimal_places=3
+    )
+    scanned_code: str | None = Field(default=None, max_length=128)
+    reason_code: Literal[
+        "PHYSICAL_COUNT",
+        "DAMAGE",
+        "SHRINKAGE",
+        "DATA_ERROR",
+        "OTHER",
+    ] | None = None
+    reason_note: str | None = Field(default=None, max_length=500)
+
+
+class InventoryCompleteRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=1000)
+
+
+class InventoryCancelRequest(BaseModel):
+    note: str = Field(min_length=3, max_length=1000)
+
+
+class InventoryRecentMovementRead(ApiModel):
+    id: str
+    movement_type: str
+    quantity_delta: Decimal
+    source_type: str
+    created_at: datetime
+
+
+class InventoryCountRead(ApiModel):
+    id: str
+    organization_id: str
+    session_id: str
+    product_id: str
+    product_name: str
+    internal_sku: str
+    base_unit: str
+    client_operation_id: str
+    expected_quantity: Decimal
+    client_expected_quantity: Decimal | None
+    counted_quantity: Decimal
+    quantity_difference: Decimal
+    scanned_code: str | None
+    reason_code: str | None
+    reason_note: str | None
+    recorded_by: str | None
+    client_recorded_at: datetime
+    created_at: datetime
+    recent_movements: list[InventoryRecentMovementRead]
+
+
+class InventoryCorrectionRead(ApiModel):
+    id: str
+    organization_id: str
+    session_id: str
+    count_id: str
+    product_id: str
+    product_name: str
+    movement_id: str
+    expected_quantity: Decimal
+    counted_quantity: Decimal
+    quantity_delta: Decimal
+    reason_code: str
+    reason_note: str | None
+    created_by: str | None
+    approved_by: str | None
+    created_at: datetime
+
+
+class InventorySessionRead(ApiModel):
+    id: str
+    organization_id: str
+    client_session_id: str
+    name: str
+    status: str
+    approval_required: bool
+    started_by: str | None
+    completed_by: str | None
+    approved_by: str | None
+    review_task_id: str | None
+    completion_note: str | None
+    started_at: datetime
+    completed_at: datetime | None
+    cancelled_at: datetime | None
+    updated_at: datetime
+    counts: list[InventoryCountRead]
+    corrections: list[InventoryCorrectionRead]
+
+
 class VersionResponse(BaseModel):
     name: str
     version: str

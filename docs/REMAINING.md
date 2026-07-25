@@ -7,9 +7,8 @@ automatizált ellenőrzés is elkészült.
 
 ## Mobil PWA és kézi leltár
 
-- Kamerás EAN/QR-olvasás `BarcodeDetector` használatával és ZXing fallbackkel.
-- Dedikált leltármenet, tételes számlálás, lezárás és auditált korrekció.
-- Valódi offline műveleti sor, újraküldés és megszakítható/folytatható feltöltés.
+- Dokumentum- és VRP-fájlfeltöltések offline várólistája, megszakítható és
+  folytatható feltöltéssel.
 
 ## Identity és részletes jogosultságok
 
