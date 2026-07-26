@@ -159,19 +159,6 @@ export default function IdentityPage({ session, onSessionUpdated }: Props) {
         </div>
       </header>
 
-      {session.mfa_setup_required && (
-        <section className="security-mandate">
-          <LockKeyhole aria-hidden="true" />
-          <div>
-            <strong>Adminisztrátori MFA szükséges</strong>
-            <span>
-              A többi adminisztratív művelet a hitelesítő alkalmazás
-              beállítása után válik elérhetővé.
-            </span>
-          </div>
-        </section>
-      )}
-
       <nav className="identity-tabs" aria-label="Identity területek">
         {tabs.map((item) => {
           const Icon = item.icon;

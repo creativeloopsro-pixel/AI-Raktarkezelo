@@ -4,6 +4,16 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.8.2] - 2026-07-26
+
+### Módosítva
+
+- A „Felhasználók és biztonság” oldalról eltávolítva az
+  „Adminisztrátori MFA szükséges” figyelmeztető sáv és annak ismétlődő
+  magyarázata.
+- Az MFA beállítása, helyreállító kódjai és szerveroldali védelme változatlanul
+  működik.
+
 ## [0.8.1] - 2026-07-26
 
 ### Hozzáadva

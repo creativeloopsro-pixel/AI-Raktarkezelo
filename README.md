@@ -6,7 +6,7 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.8.1` - működő, jogosultságtudatos Beállítások központ, részletes
+`0.8.2` - működő, jogosultságtudatos Beállítások központ, részletes
 jogosultságkezelés, adminisztrátori MFA, védett munkamenetek és folytatható
 offline fájlfeltöltés.
 
