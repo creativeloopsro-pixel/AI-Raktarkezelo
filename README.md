@@ -6,9 +6,10 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.15.0` - egyenként, kétlépcsős megerősítéssel törölhető dokumentumok és
+`0.15.1` - egyenként, kétlépcsős megerősítéssel törölhető dokumentumok és
 nulla készletű termékek. A törlés jogosultságvédett és auditált; feldolgozás alatt
-álló dokumentum, illetve készlettel rendelkező termék nem törölhető.
+álló dokumentum, illetve készlettel rendelkező termék nem törölhető. A soronkénti
+törlés mobilnézetben is mindig elérhető.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

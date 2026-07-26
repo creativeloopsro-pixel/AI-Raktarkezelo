@@ -3471,15 +3471,26 @@ button:disabled {
   }
 
   .document-name-cell {
-    min-width: 10rem;
+    min-width: 8.5rem;
   }
 
   .document-name-cell strong {
-    max-width: 10rem;
+    max-width: 8.5rem;
   }
 
-  .row-actions {
+  .document-table .row-actions {
     min-width: auto;
+    gap: 0.1rem;
+    white-space: nowrap;
+  }
+
+  .document-table .report-download-button {
+    width: 2.5rem;
+    gap: 0;
+  }
+
+  .document-table .report-download-button::after {
+    content: none;
   }
 
   .text-button {
@@ -7612,11 +7623,15 @@ button:disabled {
   }
 
   .product-table {
-    min-width: 36rem;
+    width: 100%;
+    min-width: 100%;
+    table-layout: fixed;
   }
 
   .product-table th:nth-child(3),
   .product-table td:nth-child(3),
+  .product-table th:nth-child(4),
+  .product-table td:nth-child(4),
   .product-table th:nth-child(6),
   .product-table td:nth-child(6) {
     display: none;
@@ -7624,7 +7639,43 @@ button:disabled {
 
   .product-table th,
   .product-table td {
-    padding-inline: 0.45rem;
+    padding-inline: 0.3rem;
+  }
+
+  .product-table th:nth-child(1) {
+    width: 29%;
+  }
+
+  .product-table th:nth-child(2) {
+    width: 39%;
+  }
+
+  .product-table th:nth-child(5) {
+    width: 15%;
+  }
+
+  .product-table th:nth-child(7) {
+    width: 17%;
+  }
+
+  .product-table td:first-child {
+    min-width: 0;
+  }
+
+  .product-table td:first-child strong,
+  .product-table td:first-child small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .product-table .ean-barcode.compact {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .product-row-actions {
+    width: auto;
   }
 
   .product-receiving-dialog {

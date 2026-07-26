@@ -1,7 +1,7 @@
 def test_version_endpoint(client) -> None:
     response = client.get("/api/v1/system/version")
     assert response.status_code == 200
-    assert response.json()["version"] == "0.15.0"
+    assert response.json()["version"] == "0.15.1"
 
 
 def test_login_product_creation_and_stock_correction(client) -> None:

@@ -4,6 +4,15 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.15.1] - 2026-07-26
+
+### Javítva
+
+- A Dokumentumok sorvégi törlésgombja keskeny mobilnézetben is látható marad; a
+  riportletöltés helytakarékos, akadálymentes ikongombként jelenik meg.
+- A Termékek mobil táblázata a lényeges név-, EAN-, készlet- és műveletoszlopokra
+  igazodik, így az egyedi törlés vízszintes görgetés nélkül elérhető.
+
 ## [0.15.0] - 2026-07-26
 
 ### Hozzáadva
