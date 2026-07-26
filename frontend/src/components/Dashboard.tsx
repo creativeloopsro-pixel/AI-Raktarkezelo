@@ -562,6 +562,7 @@ export default function Dashboard({
             ) : (
               <DocumentsPage
                 embedded
+                permissions={permissions}
                 onUpload={() => navigateTo("uploads")}
                 onOpenReviews={() => {
                   setReviewOrigin("documents");

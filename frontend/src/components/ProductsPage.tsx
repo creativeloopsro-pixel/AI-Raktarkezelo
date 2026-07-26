@@ -1,16 +1,21 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Barcode,
   Boxes,
+  CheckCircle2,
   FileUp,
+  LoaderCircle,
   PackageCheck,
   PackagePlus,
   Plus,
-  Search
+  Search,
+  Trash2
 } from "lucide-react";
 
+import { deleteProduct } from "../lib/api";
 import type { Product, StockBalance } from "../types";
 import EanBarcode from "./EanBarcode";
 
@@ -39,10 +44,14 @@ export default function ProductsPage({
   onNewProduct,
   onReceive
 }: Props) {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState("");
   const deferredSearch = useDeferredValue(search);
   const can = (permission: string) => permissions.includes(permission);
   const canCreate = can("products.write");
+  const canDelete = can("products.write");
   const canReceive = can("stock.receive");
   const canUseDeliveryAi =
     can("documents.upload") &&
@@ -64,6 +73,30 @@ export default function ProductsPage({
         product.barcodes.some((barcode) => barcode.code.includes(needle))
     );
   }, [deferredSearch, products]);
+  const deleteMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: async (_result, productId) => {
+      const deleted = products.find((product) => product.id === productId);
+      setConfirmDeleteId(null);
+      setDeleteFeedback(
+        deleted ? `${deleted.name} törölve.` : "A termék törölve."
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["stock"] })
+      ]);
+    }
+  });
+
+  const requestDelete = (productId: string) => {
+    setDeleteFeedback("");
+    deleteMutation.reset();
+    if (confirmDeleteId !== productId) {
+      setConfirmDeleteId(productId);
+      return;
+    }
+    deleteMutation.mutate(productId);
+  };
 
   const eanMissing = products.filter(
     (product) => !product.barcodes.some((barcode) => barcode.is_primary)
@@ -186,6 +219,7 @@ export default function ProductsPage({
                   <th>Állapot</th>
                   <th className="numeric">Készlet</th>
                   <th className="numeric">Minimum</th>
+                  <th aria-label="Műveletek" />
                 </tr>
               </thead>
               <tbody>
@@ -220,12 +254,63 @@ export default function ProductsPage({
                       <td className="numeric muted-text">
                         {formatter.format(minimum)}
                       </td>
+                      <td className="product-row-actions">
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            className={`icon-button danger ${
+                              confirmDeleteId === product.id
+                                ? "confirming"
+                                : ""
+                            }`}
+                            aria-label={
+                              confirmDeleteId === product.id
+                                ? `${product.name} törlésének megerősítése`
+                                : `${product.name} törlése`
+                            }
+                            title={
+                              quantity !== 0
+                                ? "A termék készletét törlés előtt nullázni kell"
+                                : confirmDeleteId === product.id
+                                  ? "Kattints újra a végleges törléshez"
+                                  : "Termék törlése"
+                            }
+                            disabled={
+                              quantity !== 0 || deleteMutation.isPending
+                            }
+                            onClick={() => requestDelete(product.id)}
+                          >
+                            {deleteMutation.isPending &&
+                            deleteMutation.variables === product.id ? (
+                              <LoaderCircle className="spin" aria-hidden="true" />
+                            ) : (
+                              <Trash2 aria-hidden="true" />
+                            )}
+                          </button>
+                        ) : null}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+        ) : null}
+        {confirmDeleteId ? (
+          <p className="row-delete-feedback warning" role="status">
+            A végleges törléshez kattints újra a piros törlésgombra.
+          </p>
+        ) : null}
+        {deleteFeedback ? (
+          <p className="row-delete-feedback success" role="status">
+            <CheckCircle2 aria-hidden="true" />
+            {deleteFeedback}
+          </p>
+        ) : null}
+        {deleteMutation.error ? (
+          <p className="form-error product-delete-error">
+            {deleteMutation.error.message}
+          </p>
         ) : null}
       </section>
     </motion.div>

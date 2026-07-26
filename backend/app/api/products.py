@@ -6,7 +6,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import CurrentUser, DbSession, require_permissions
+from app.dependencies import CurrentUser, DbSession, InteractiveUser, require_permissions
 from app.models import AuditLog, PackagingUnit, Product, ProductBarcode, StockBalance
 from app.schemas import ProductCreate, ProductRead
 
@@ -162,6 +162,7 @@ def get_product(
         _product_query().where(
             Product.id == product_id,
             Product.organization_id == user.organization_id,
+            Product.status == "active",
         )
     )
     if product is None:
@@ -170,3 +171,60 @@ def get_product(
             detail={"code": "product_not_found", "message": "A termék nem található."},
         )
     return product
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_product(
+    product_id: str,
+    session: DbSession,
+    user: InteractiveUser,
+    _: CatalogEditor,
+) -> None:
+    product = session.scalar(
+        select(Product)
+        .where(
+            Product.id == product_id,
+            Product.organization_id == user.organization_id,
+            Product.status == "active",
+        )
+        .with_for_update()
+    )
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "product_not_found", "message": "A termék nem található."},
+        )
+
+    balance = session.scalar(
+        select(StockBalance).where(
+            StockBalance.organization_id == user.organization_id,
+            StockBalance.product_id == product.id,
+        )
+    )
+    if balance is not None and balance.quantity != 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "product_has_stock",
+                "message": "Csak nulla készletű termék törölhető.",
+            },
+        )
+
+    product.status = "archived"
+    product.version += 1
+    session.add(
+        AuditLog(
+            organization_id=user.organization_id,
+            actor_id=user.id,
+            action="catalog.product_deleted",
+            entity_type="product",
+            entity_id=product.id,
+            correlation_id=str(uuid4()),
+            details={
+                "sku": product.internal_sku,
+                "name": product.name,
+                "deletion_mode": "audit_safe_archive",
+            },
+        )
+    )
+    session.commit()

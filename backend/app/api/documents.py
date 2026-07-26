@@ -16,11 +16,12 @@ from fastapi import (
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy import or_, select
 
-from app.dependencies import CurrentUser, DbSession, require_permissions
+from app.dependencies import CurrentUser, DbSession, InteractiveUser, require_permissions
 from app.models import Document
 from app.queueing import dispatch_document_job
 from app.schemas import DocumentProcessingJobRead, DocumentRead
 from app.services.documents import (
+    DocumentBusyError,
     DocumentNeedsReviewError,
     DocumentNotFoundError,
     DocumentNotProcessableError,
@@ -37,6 +38,10 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 DocumentReader = Annotated[object, Depends(require_permissions("documents.read"))]
 DocumentUploader = Annotated[object, Depends(require_permissions("documents.upload"))]
 DocumentProcessor = Annotated[object, Depends(require_permissions("documents.process"))]
+DocumentDeleter = Annotated[
+    object,
+    Depends(require_permissions("documents.upload", "documents.process")),
+]
 
 
 def _correlation_id(value: str | None) -> str:
@@ -101,6 +106,14 @@ def _document_error(exc: Exception) -> HTTPException:
             detail={
                 "code": exc.code,
                 "message": "A dokumentum ebben az állapotban nem indítható újra.",
+            },
+        )
+    if isinstance(exc, DocumentBusyError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": exc.code,
+                "message": "A dokumentum feldolgozás alatt nem törölhető.",
             },
         )
     return HTTPException(
@@ -227,6 +240,26 @@ def download_document(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail={"code": "storage_unavailable", "message": "A dokumentumtár nem elérhető."},
     )
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    document_id: str,
+    session: DbSession,
+    user: InteractiveUser,
+    _: DocumentDeleter,
+    correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
+) -> Response:
+    try:
+        DocumentService(session).delete_document(
+            user=user,
+            document_id=document_id,
+            correlation_id=_correlation_id(correlation_header),
+        )
+    except Exception as exc:
+        session.rollback()
+        raise _document_error(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{document_id}", response_model=DocumentRead)

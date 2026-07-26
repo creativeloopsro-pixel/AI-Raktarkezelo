@@ -218,3 +218,87 @@ def test_document_upload_api_rejects_duplicate(
         },
     )
     assert forbidden_queue.status_code == 403
+
+    forbidden_delete = client.delete(
+        f"/api/v1/documents/{document_id}",
+        headers={"Authorization": f"Bearer {viewer_token}"},
+    )
+    assert forbidden_delete.status_code == 403
+
+    session.expire_all()
+    stored_document = session.get(Document, document_id)
+    assert stored_document is not None
+    stored_path = storage.local_path(stored_document.object_key)
+    assert stored_path is not None and stored_path.exists()
+
+    delete_response = client.delete(
+        f"/api/v1/documents/{document_id}",
+        headers=headers,
+    )
+    assert delete_response.status_code == 204
+    assert not stored_path.exists()
+    assert client.get(
+        f"/api/v1/documents/{document_id}",
+        headers=headers,
+    ).status_code == 404
+    assert client.get("/api/v1/documents", headers=headers).json() == []
+
+    session.expire_all()
+    deleted_audit = session.scalar(
+        select(AuditLog).where(
+            AuditLog.action == "documents.deleted",
+            AuditLog.entity_id == document_id,
+        )
+    )
+    assert deleted_audit is not None
+
+    repeated_upload = client.post(
+        "/api/v1/documents",
+        headers=headers,
+        files={"file": ("receipt-again.pdf", pdf_bytes(), "application/pdf")},
+        data={"document_type": "goods_receipt"},
+    )
+    assert repeated_upload.status_code == 201
+
+
+def test_document_delete_is_blocked_while_processing(
+    client, monkeypatch, tmp_path
+) -> None:
+    storage = LocalObjectStorage(tmp_path / "busy-api-objects")
+    monkeypatch.setattr("app.services.documents.get_object_storage", lambda: storage)
+    monkeypatch.setattr("app.api.documents.get_object_storage", lambda: storage)
+    monkeypatch.setattr(
+        "app.services.documents.get_virus_scanner",
+        lambda: DisabledVirusScanner(),
+    )
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "organization_slug": "tesztbolt",
+            "email": "admin@teszt.hu",
+            "password": "Secret-1234!",
+        },
+    )
+    headers = {"Authorization": f"Bearer {login_response.json()['access_token']}"}
+    upload_response = client.post(
+        "/api/v1/documents",
+        headers=headers,
+        files={"file": ("processing.pdf", pdf_bytes(), "application/pdf")},
+        data={"document_type": "goods_receipt"},
+    )
+    document_id = upload_response.json()["id"]
+    queue_response = client.post(
+        f"/api/v1/documents/{document_id}/process",
+        headers={
+            **headers,
+            "Idempotency-Key": "delete-busy-document",
+        },
+    )
+    assert queue_response.status_code == 202
+
+    delete_response = client.delete(
+        f"/api/v1/documents/{document_id}",
+        headers=headers,
+    )
+    assert delete_response.status_code == 409
+    assert delete_response.json()["detail"]["code"] == "document_busy"

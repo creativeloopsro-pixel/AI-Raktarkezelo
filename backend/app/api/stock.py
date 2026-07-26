@@ -196,6 +196,7 @@ def stock_detail(
         .where(
             Product.id == product_id,
             Product.organization_id == user.organization_id,
+            Product.status == "active",
         )
     ).one_or_none()
     if row is None:

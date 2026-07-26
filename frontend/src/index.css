@@ -158,6 +158,26 @@ button:disabled {
   background: #efede6;
 }
 
+.icon-button.danger {
+  color: var(--danger);
+}
+
+.icon-button.danger:hover,
+.icon-button.danger.confirming {
+  color: white;
+  background: var(--danger);
+}
+
+.icon-button.danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.icon-button.danger:disabled:hover {
+  color: var(--danger);
+  background: transparent;
+}
+
 .login-shell {
   display: grid;
   min-height: 100svh;
@@ -1260,6 +1280,28 @@ button:disabled {
   align-items: center;
   justify-content: flex-end;
   gap: 0.25rem;
+}
+
+.row-delete-feedback {
+  display: flex;
+  width: fit-content;
+  margin: 0.9rem 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.row-delete-feedback svg {
+  width: 1rem;
+}
+
+.row-delete-feedback.warning {
+  color: var(--danger);
+}
+
+.row-delete-feedback.success {
+  color: var(--success);
 }
 
 .text-button,
@@ -7177,6 +7219,15 @@ button:disabled {
 
 .product-table .ean-barcode.compact {
   width: 8.3rem;
+}
+
+.product-row-actions {
+  width: 3.5rem;
+  text-align: right;
+}
+
+.product-row-actions .icon-button {
+  margin-left: auto;
 }
 
 .product-receiving-dialog {

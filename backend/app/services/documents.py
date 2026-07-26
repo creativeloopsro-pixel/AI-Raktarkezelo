@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -10,7 +11,7 @@ import filetype
 from PIL import Image, UnidentifiedImageError
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
@@ -19,6 +20,9 @@ from app.models import (
     Document,
     DocumentPage,
     DocumentProcessingJob,
+    InboundEmailAttachment,
+    InventoryReportRun,
+    InventoryReportSchedule,
     OutboxEvent,
     ReviewTask,
     User,
@@ -32,6 +36,8 @@ from app.virus_scan import (
     VirusScannerUnavailableError,
     get_virus_scanner,
 )
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_CONTENT_TYPES = {
     "application/pdf": "pdf",
@@ -70,6 +76,10 @@ class DocumentNeedsReviewError(DocumentError):
 
 class DocumentNotProcessableError(DocumentError):
     code = "document_not_processable"
+
+
+class DocumentBusyError(DocumentError):
+    code = "document_busy"
 
 
 class ReviewTaskNotFoundError(DocumentError):
@@ -365,6 +375,110 @@ class DocumentService:
         )
         self.session.commit()
         return ProcessingJobResult(job=job, created=True)
+
+    def delete_document(
+        self,
+        *,
+        user: User,
+        document_id: str,
+        correlation_id: str,
+    ) -> None:
+        document = self.session.scalar(
+            select(Document)
+            .where(
+                Document.id == document_id,
+                Document.organization_id == user.organization_id,
+            )
+            .with_for_update()
+        )
+        if document is None:
+            raise DocumentNotFoundError
+        if document.status in {"QUEUED", "PROCESSING", "RETRY"}:
+            raise DocumentBusyError
+
+        deleted_at = utc_now()
+        open_reviews = self.session.scalars(
+            select(ReviewTask).where(
+                ReviewTask.organization_id == user.organization_id,
+                ReviewTask.entity_type == "document",
+                ReviewTask.entity_id == document.id,
+                ReviewTask.status == "OPEN",
+            )
+        )
+        for review in open_reviews:
+            review.status = "RESOLVED"
+            review.resolved_by = user.id
+            review.resolution_note = "A kapcsolódó dokumentum törölve."
+            review.resolved_at = deleted_at
+
+        self.session.execute(
+            update(InboundEmailAttachment)
+            .where(
+                InboundEmailAttachment.organization_id == user.organization_id,
+                InboundEmailAttachment.document_id == document.id,
+            )
+            .values(document_id=None)
+        )
+        self.session.execute(
+            update(InventoryReportSchedule)
+            .where(
+                InventoryReportSchedule.organization_id == user.organization_id,
+                InventoryReportSchedule.last_document_id == document.id,
+            )
+            .values(last_document_id=None)
+        )
+        self.session.execute(
+            update(InventoryReportRun)
+            .where(
+                InventoryReportRun.organization_id == user.organization_id,
+                InventoryReportRun.document_id == document.id,
+            )
+            .values(document_id=None)
+        )
+
+        object_key = document.object_key
+        original_status = document.status
+        original_filename = document.original_filename
+        self.session.delete(document)
+        self.session.add(
+            AuditLog(
+                organization_id=user.organization_id,
+                actor_id=user.id,
+                action="documents.deleted",
+                entity_type="document",
+                entity_id=document.id,
+                correlation_id=correlation_id,
+                details={
+                    "filename": original_filename,
+                    "previous_status": original_status,
+                },
+            )
+        )
+        self.session.add(
+            OutboxEvent(
+                organization_id=user.organization_id,
+                event_type="document.deleted",
+                aggregate_type="document",
+                aggregate_id=document.id,
+                payload={
+                    "document_id": document.id,
+                    "filename": original_filename,
+                    "correlation_id": correlation_id,
+                },
+            )
+        )
+        self.session.commit()
+
+        try:
+            self.storage.delete(object_key)
+        except Exception:
+            logger.exception(
+                "A törölt dokumentum objektumtári állományának eltávolítása sikertelen.",
+                extra={
+                    "organization_id": user.organization_id,
+                    "document_id": document_id,
+                },
+            )
 
     def resolve_review_task(
         self,

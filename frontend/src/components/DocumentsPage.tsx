@@ -11,17 +11,20 @@ import {
   LoaderCircle,
   Search,
   ShieldCheck,
+  Trash2,
   Undo2,
   UploadCloud
 } from "lucide-react";
 
 import {
+  deleteDocument,
   downloadDocument,
   getDocuments,
   queueDocument
 } from "../lib/api";
 type Props = {
   embedded?: boolean;
+  permissions: string[];
   onUpload: () => void;
   onOpenReviews: () => void;
   onOpenReceipt: (documentId: string) => void;
@@ -65,6 +68,7 @@ function formatDate(value: string): string {
 
 export default function DocumentsPage({
   embedded = false,
+  permissions,
   onUpload,
   onOpenReviews,
   onOpenReceipt
@@ -72,6 +76,11 @@ export default function DocumentsPage({
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState("");
+  const canDelete =
+    permissions.includes("documents.upload") &&
+    permissions.includes("documents.process");
   const documentsQuery = useQuery({
     queryKey: ["documents"],
     queryFn: getDocuments,
@@ -87,6 +96,35 @@ export default function DocumentsPage({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] })
   });
   const downloadMutation = useMutation({ mutationFn: downloadDocument });
+  const deleteMutation = useMutation({
+    mutationFn: deleteDocument,
+    onSuccess: async (_result, documentId) => {
+      const deleted = documents.find((document) => document.id === documentId);
+      setConfirmDeleteId(null);
+      setDeleteFeedback(
+        deleted
+          ? `${deleted.original_filename} törölve.`
+          : "A dokumentum törölve."
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["documents"] }),
+        queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["inventory-report-schedule"]
+        })
+      ]);
+    }
+  });
+
+  const requestDelete = (documentId: string) => {
+    setDeleteFeedback("");
+    deleteMutation.reset();
+    if (confirmDeleteId !== documentId) {
+      setConfirmDeleteId(documentId);
+      return;
+    }
+    deleteMutation.mutate(documentId);
+  };
 
   const filteredDocuments = documents.filter((document) => {
     const needle = search.trim().toLocaleLowerCase("hu");
@@ -315,6 +353,44 @@ export default function DocumentsPage({
                               : "Részletek"}
                           </button>
                         )}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            className={`icon-button danger ${
+                              confirmDeleteId === document.id
+                                ? "confirming"
+                                : ""
+                            }`}
+                            aria-label={
+                              confirmDeleteId === document.id
+                                ? `${document.original_filename} törlésének megerősítése`
+                                : `${document.original_filename} törlése`
+                            }
+                            title={
+                              ["QUEUED", "PROCESSING", "RETRY"].includes(
+                                document.status
+                              )
+                                ? "Feldolgozás alatt álló dokumentum nem törölhető"
+                                : confirmDeleteId === document.id
+                                  ? "Kattints újra a végleges törléshez"
+                                  : "Dokumentum törlése"
+                            }
+                            disabled={
+                              deleteMutation.isPending ||
+                              ["QUEUED", "PROCESSING", "RETRY"].includes(
+                                document.status
+                              )
+                            }
+                            onClick={() => requestDelete(document.id)}
+                          >
+                            {deleteMutation.isPending &&
+                            deleteMutation.variables === document.id ? (
+                              <LoaderCircle className="spin" aria-hidden="true" />
+                            ) : (
+                              <Trash2 aria-hidden="true" />
+                            )}
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </motion.tr>
@@ -323,10 +399,24 @@ export default function DocumentsPage({
             </table>
           </div>
         )}
-        {(processingMutation.error || downloadMutation.error) && (
+        {confirmDeleteId ? (
+          <p className="row-delete-feedback warning" role="status">
+            A végleges törléshez kattints újra a piros törlésgombra.
+          </p>
+        ) : null}
+        {deleteFeedback ? (
+          <p className="row-delete-feedback success" role="status">
+            <CheckCircle2 aria-hidden="true" />
+            {deleteFeedback}
+          </p>
+        ) : null}
+        {(processingMutation.error ||
+          downloadMutation.error ||
+          deleteMutation.error) && (
           <p className="form-error document-error">
             {processingMutation.error?.message ||
               downloadMutation.error?.message ||
+              deleteMutation.error?.message ||
               "A művelet sikertelen."}
           </p>
         )}

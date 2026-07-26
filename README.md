@@ -6,10 +6,9 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.14.1` - automatikus AI-készletleltár napi, heti vagy havi ütemezéssel,
-magyar ékezeteket támogató többoldalas PDF-fel, dokumentumtári archiválással és
-jogosultságvédett letöltéssel. A PDF-ben az elsődleges EAN közvetlenül a termék
-mellett látható. A Beállításokból kézi tesztleltár is indítható.
+`0.15.0` - egyenként, kétlépcsős megerősítéssel törölhető dokumentumok és
+nulla készletű termékek. A törlés jogosultságvédett és auditált; feldolgozás alatt
+álló dokumentum, illetve készlettel rendelkező termék nem törölhető.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

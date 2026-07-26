@@ -339,6 +339,12 @@ export function queueDocument(documentId: string): Promise<unknown> {
   });
 }
 
+export function deleteDocument(documentId: string): Promise<void> {
+  return request<void>(`/documents/${documentId}`, {
+    method: "DELETE"
+  });
+}
+
 export function getReviewTasks(): Promise<ReviewTask[]> {
   return request<ReviewTask[]>("/review-tasks?status=OPEN");
 }
@@ -426,6 +432,12 @@ export function createProduct(payload: ProductCreate): Promise<Product> {
   return request<Product>("/products", {
     method: "POST",
     body: JSON.stringify(payload)
+  });
+}
+
+export function deleteProduct(productId: string): Promise<void> {
+  return request<void>(`/products/${productId}`, {
+    method: "DELETE"
   });
 }
 

@@ -4,6 +4,28 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.15.0] - 2026-07-26
+
+### Hozzáadva
+
+- Egyedi, soronkénti törlésgomb a Dokumentumok táblában és minden terméknél a
+  Termékek táblában.
+- Kétlépcsős, véletlen kattintás ellen védett törlési megerősítés, folyamatjelző,
+  sikeres állapot és API-hibavisszajelzés asztali és mobilnézetben.
+- Jogosultság- és tenant-védett `DELETE /documents/{id}` és
+  `DELETE /products/{id}` API-végpont auditnaplózással.
+
+### Biztonság és megbízhatóság
+
+- Feldolgozás alatt álló dokumentum nem törölhető; dokumentumtörléskor az
+  objektumtári fájl, a kapcsolódó feldolgozási adatok és a nyitott ellenőrzési
+  feladatok is konzisztensen rendeződnek.
+- Termék csak nulla készlettel törölhető. A termék auditbiztos archiválással
+  tűnik el az aktív katalógusból, így a korábbi készletmozgások megmaradnak.
+- A törlés interaktív felhasználói munkamenetet és meglévő kezelési
+  jogosultságokat követel; regressziós tesztek védik a jogosultsági, készlet- és
+  feldolgozási korlátokat.
+
 ## [0.14.1] - 2026-07-26
 
 ### Módosítva
