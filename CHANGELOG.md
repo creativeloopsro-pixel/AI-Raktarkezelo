@@ -4,6 +4,13 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.9.1] - 2026-07-26
+
+### Javítva
+
+- A mobilos feltöltési nézet rejtett fájl- és kameramezői már nem öröklik a
+  látható űrlapmezők teljes szélességét, ezért megszűnt a vízszintes túlnyúlás.
+
 ## [0.9.0] - 2026-07-26
 
 ### Hozzáadva

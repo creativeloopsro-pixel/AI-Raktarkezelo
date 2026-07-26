@@ -5010,7 +5010,7 @@ button:disabled {
 }
 
 .upload-composer-form select,
-.upload-composer-form input,
+.upload-composer-form input:not(.sr-only),
 .role-editor input,
 .role-editor textarea,
 .token-create-panel input {

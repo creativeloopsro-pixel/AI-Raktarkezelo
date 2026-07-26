@@ -6,7 +6,7 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.9.0` - mobilkamerás vonalkódos bevételezés, bizonylatfotóból indítható
+`0.9.1` - mobilkamerás vonalkódos bevételezés, bizonylatfotóból indítható
 magas biztonságú AI automatikus készletkönyvelés, részletes jogosultságkezelés,
 védett munkamenetek és folytatható offline fájlfeltöltés.
 
