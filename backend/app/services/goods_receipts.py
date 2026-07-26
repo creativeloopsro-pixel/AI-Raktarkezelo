@@ -16,6 +16,7 @@ from app.models import (
     PackagingUnit,
     Product,
     ReviewTask,
+    StockMovement,
     User,
     utc_now,
 )
@@ -36,6 +37,10 @@ class GoodsReceiptItemNotFoundError(GoodsReceiptError):
 
 class GoodsReceiptNotReadyError(GoodsReceiptError):
     code = "goods_receipt_not_ready"
+
+
+class GoodsReceiptNotConfirmedError(GoodsReceiptError):
+    code = "goods_receipt_not_confirmed"
 
 
 class InvalidProductMatchError(GoodsReceiptError):
@@ -248,6 +253,88 @@ class GoodsReceiptService:
                     "document_id": draft.document_id,
                     "item_count": len(items),
                     "confirmation_source": confirmation_source,
+                    "correlation_id": correlation_id,
+                },
+            )
+        )
+        self.session.commit()
+        return self.get_by_document(user.organization_id, draft.document_id)
+
+    def reverse(
+        self,
+        *,
+        user: User,
+        draft_id: str,
+        reason: str,
+        correlation_id: str,
+    ) -> GoodsReceiptDraft:
+        draft = self._locked_draft(user.organization_id, draft_id)
+        if draft.status == "REVERSED":
+            return self.get_by_document(user.organization_id, draft.document_id)
+        if draft.status != "CONFIRMED":
+            raise GoodsReceiptNotConfirmedError
+
+        movements = list(
+            self.session.scalars(
+                select(StockMovement)
+                .where(
+                    StockMovement.organization_id == user.organization_id,
+                    StockMovement.source_type == "DOCUMENT_GOODS_RECEIPT",
+                    StockMovement.source_id == draft.id,
+                    StockMovement.movement_type == "GOODS_RECEIPT",
+                )
+                .order_by(StockMovement.created_at, StockMovement.id)
+                .with_for_update()
+            )
+        )
+        if not movements:
+            raise GoodsReceiptNotConfirmedError
+
+        stock_service = StockService(self.session)
+        for movement in movements:
+            stock_service.reverse(
+                user=user,
+                movement_id=movement.id,
+                idempotency_key=f"goods-receipt-reverse:{draft.id}:{movement.id}",
+                correlation_id=correlation_id,
+                reason=reason,
+            )
+
+        draft.status = "REVERSED"
+        document = self.session.scalar(
+            select(Document).where(
+                Document.id == draft.document_id,
+                Document.organization_id == user.organization_id,
+            )
+        )
+        if document is not None:
+            document.status = "REVERSED"
+
+        self.session.add(
+            AuditLog(
+                organization_id=user.organization_id,
+                actor_id=user.id,
+                action="goods_receipt.reversed",
+                entity_type="goods_receipt",
+                entity_id=draft.id,
+                correlation_id=correlation_id,
+                details={
+                    "document_id": draft.document_id,
+                    "movement_count": len(movements),
+                    "reason": reason,
+                },
+            )
+        )
+        self.session.add(
+            OutboxEvent(
+                organization_id=user.organization_id,
+                event_type="goods_receipt.reversed",
+                aggregate_type="goods_receipt",
+                aggregate_id=draft.id,
+                payload={
+                    "document_id": draft.document_id,
+                    "movement_count": len(movements),
+                    "reason": reason,
                     "correlation_id": correlation_id,
                 },
             )

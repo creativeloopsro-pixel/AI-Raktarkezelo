@@ -13,12 +13,14 @@ import {
   PackageCheck,
   Save,
   ScanSearch,
-  ShieldCheck
+  ShieldCheck,
+  Undo2
 } from "lucide-react";
 
 import {
   confirmGoodsReceipt,
   getGoodsReceipt,
+  reverseGoodsReceipt,
   updateGoodsReceiptItem
 } from "../lib/api";
 import type {
@@ -30,6 +32,7 @@ import type {
 type Props = {
   documentId: string;
   products: Product[];
+  canReverse: boolean;
   onBack: () => void;
 };
 
@@ -44,7 +47,8 @@ const issueLabels: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   READY: "Jóváhagyható",
   NEEDS_REVIEW: "Ellenőrzést kér",
-  CONFIRMED: "Könyvelve"
+  CONFIRMED: "Könyvelve",
+  REVERSED: "Visszavonva"
 };
 
 function LineEditor({
@@ -201,9 +205,11 @@ function LineEditor({
 export default function ReceiptReviewPage({
   documentId,
   products,
+  canReverse,
   onBack
 }: Props) {
   const queryClient = useQueryClient();
+  const [reverseConfirm, setReverseConfirm] = useState(false);
   const receiptQuery = useQuery({
     queryKey: ["goods-receipt", documentId],
     queryFn: () => getGoodsReceipt(documentId)
@@ -216,6 +222,21 @@ export default function ReceiptReviewPage({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["documents"] }),
         queryClient.invalidateQueries({ queryKey: ["review-tasks"] }),
+        queryClient.invalidateQueries({ queryKey: ["stock"] })
+      ]);
+    }
+  });
+  const reverseMutation = useMutation({
+    mutationFn: (draftId: string) =>
+      reverseGoodsReceipt(
+        draftId,
+        "Felhasználó által visszavont AI-bevételezés"
+      ),
+    onSuccess: async (reversed) => {
+      setReverseConfirm(false);
+      queryClient.setQueryData(["goods-receipt", documentId], reversed);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["documents"] }),
         queryClient.invalidateQueries({ queryKey: ["stock"] })
       ]);
     }
@@ -241,7 +262,7 @@ export default function ReceiptReviewPage({
   }
 
   const confidence = Math.round(Number(draft.ai_result.overall_confidence) * 100);
-  const readOnly = draft.status === "CONFIRMED";
+  const readOnly = ["CONFIRMED", "REVERSED"].includes(draft.status);
 
   return (
     <motion.div
@@ -260,7 +281,7 @@ export default function ReceiptReviewPage({
           <h1>{draft.document_number || "Szám nélküli bizonylat"}</h1>
         </div>
         <span className={`receipt-status ${draft.status.toLowerCase()}`}>
-          {draft.status === "CONFIRMED" ? (
+          {draft.status === "CONFIRMED" || draft.status === "REVERSED" ? (
             <CheckCircle2 aria-hidden="true" />
           ) : draft.status === "READY" ? (
             <ShieldCheck aria-hidden="true" />
@@ -341,7 +362,9 @@ export default function ReceiptReviewPage({
           <PackageCheck aria-hidden="true" />
           <span>
             <strong>
-              {readOnly
+              {draft.status === "REVERSED"
+                ? "A készletmozgások visszavonva"
+                : readOnly
                 ? "A készletmozgások könyvelve"
                 : draft.status === "READY"
                   ? "Minden tétel jóváhagyható"
@@ -360,10 +383,30 @@ export default function ReceiptReviewPage({
             {confirmMutation.isPending ? "Könyvelés…" : "Bevételezés jóváhagyása"}
           </button>
         )}
+        {draft.status === "CONFIRMED" && canReverse && (
+          <button
+            className={reverseConfirm ? "danger-button confirming" : "danger-button"}
+            disabled={reverseMutation.isPending}
+            onClick={() => {
+              if (!reverseConfirm) {
+                setReverseConfirm(true);
+                return;
+              }
+              reverseMutation.mutate(draft.id);
+            }}
+          >
+            <Undo2 aria-hidden="true" />
+            {reverseMutation.isPending
+              ? "Visszavonás…"
+              : reverseConfirm
+                ? "Igen, készlet visszaállítása"
+                : "Bevételezés visszavonása"}
+          </button>
+        )}
       </footer>
-      {confirmMutation.error && (
+      {(confirmMutation.error || reverseMutation.error) && (
         <p className="form-error receipt-confirm-error">
-          {confirmMutation.error.message}
+          {confirmMutation.error?.message || reverseMutation.error?.message}
         </p>
       )}
     </motion.div>

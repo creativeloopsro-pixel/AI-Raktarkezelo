@@ -5,10 +5,15 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import GoodsReceiptDraft
-from app.schemas import GoodsReceiptDraftRead, GoodsReceiptItemUpdate
+from app.schemas import (
+    GoodsReceiptDraftRead,
+    GoodsReceiptItemUpdate,
+    GoodsReceiptReverse,
+)
 from app.services.goods_receipts import (
     GoodsReceiptError,
     GoodsReceiptItemNotFoundError,
+    GoodsReceiptNotConfirmedError,
     GoodsReceiptNotFoundError,
     GoodsReceiptNotReadyError,
     GoodsReceiptService,
@@ -18,6 +23,10 @@ from app.services.goods_receipts import (
 router = APIRouter(prefix="/goods-receipts", tags=["goods receipts"])
 ReceiptReader = Annotated[object, Depends(require_permissions("receipts.read"))]
 ReceiptConfirmer = Annotated[object, Depends(require_permissions("receipts.confirm"))]
+ReceiptReverser = Annotated[
+    object,
+    Depends(require_permissions("receipts.confirm", "stock.reverse")),
+]
 
 
 def _map_error(exc: GoodsReceiptError) -> HTTPException:
@@ -32,6 +41,14 @@ def _map_error(exc: GoodsReceiptError) -> HTTPException:
             detail={
                 "code": exc.code,
                 "message": "A bevételezés csak minden tétel ellenőrzése után hagyható jóvá.",
+            },
+        )
+    if isinstance(exc, GoodsReceiptNotConfirmedError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": exc.code,
+                "message": "Csak korábban könyvelt bevételezés vonható vissza.",
             },
         )
     if isinstance(exc, InvalidProductMatchError):
@@ -107,6 +124,30 @@ def confirm_receipt(
         return GoodsReceiptService(session).confirm(
             user=user,
             draft_id=draft_id,
+            correlation_id=correlation_header or str(uuid4()),
+        )
+    except GoodsReceiptError as exc:
+        session.rollback()
+        raise _map_error(exc) from exc
+
+
+@router.post(
+    "/{draft_id}/reverse",
+    response_model=GoodsReceiptDraftRead,
+)
+def reverse_receipt(
+    draft_id: str,
+    payload: GoodsReceiptReverse,
+    session: DbSession,
+    user: CurrentUser,
+    _: ReceiptReverser,
+    correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
+) -> GoodsReceiptDraft:
+    try:
+        return GoodsReceiptService(session).reverse(
+            user=user,
+            draft_id=draft_id,
+            reason=payload.reason,
             correlation_id=correlation_header or str(uuid4()),
         )
     except GoodsReceiptError as exc:

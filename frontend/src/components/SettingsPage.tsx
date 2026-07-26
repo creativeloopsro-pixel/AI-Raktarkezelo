@@ -26,6 +26,7 @@ export type SettingsTarget =
 
 type Props = {
   session: Session;
+  focusAi?: boolean;
   onNavigate: (target: SettingsTarget) => void;
 };
 
@@ -39,7 +40,11 @@ type SettingsCard = {
   visible: boolean;
 };
 
-export default function SettingsPage({ session, onNavigate }: Props) {
+export default function SettingsPage({
+  session,
+  focusAi = false,
+  onNavigate
+}: Props) {
   const [online, setOnline] = useState(() => navigator.onLine);
   const permissions = session.user.permissions ?? [];
   const can = (permission: string) => permissions.includes(permission);
@@ -53,6 +58,16 @@ export default function SettingsPage({ session, onNavigate }: Props) {
       window.removeEventListener("offline", updateConnectivity);
     };
   }, []);
+
+  useEffect(() => {
+    if (!focusAi) return;
+    window.requestAnimationFrame(() =>
+      document.getElementById("ai-settings")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      })
+    );
+  }, [focusAi]);
 
   const cards: SettingsCard[] = [
       {
@@ -205,7 +220,9 @@ export default function SettingsPage({ session, onNavigate }: Props) {
       </section>
 
       {can("settings.read") ? (
-        <AiSettingsPanel canWrite={can("settings.write")} />
+        <div id="ai-settings" className="settings-anchor-section">
+          <AiSettingsPanel canWrite={can("settings.write")} />
+        </div>
       ) : null}
 
       <section className="settings-runtime">

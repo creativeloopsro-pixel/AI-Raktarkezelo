@@ -15,6 +15,7 @@ import { getReviewTasks, queueDocument, resolveReviewTask } from "../lib/api";
 import type { ReviewTask } from "../types";
 
 type Props = {
+  embedded?: boolean;
   onBack: () => void;
   onOpenReceipt: (documentId: string) => void;
   onOpenVrp: (batchId: string) => void;
@@ -39,6 +40,7 @@ const reasonLabels: Record<string, string> = {
 };
 
 export default function ReviewTasksPage({
+  embedded = false,
   onBack,
   onOpenReceipt,
   onOpenVrp
@@ -80,7 +82,7 @@ export default function ReviewTasksPage({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.28 }}
     >
-      <header className="workspace-header">
+      {!embedded && <header className="workspace-header">
         <div>
           <button className="back-link" onClick={onBack}>
             <ArrowLeft aria-hidden="true" />
@@ -93,7 +95,7 @@ export default function ReviewTasksPage({
           <span>Nyitott feladat</span>
           <strong>{tasks.length}</strong>
         </div>
-      </header>
+      </header>}
 
       <section className="review-list">
         <div className="section-heading">

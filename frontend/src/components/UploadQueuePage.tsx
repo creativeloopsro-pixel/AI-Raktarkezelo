@@ -45,6 +45,7 @@ import type {
 } from "../lib/offlineUploads";
 
 type Props = {
+  embedded?: boolean;
   organizationId: string;
   permissions: string[];
   onOpenResult: (upload: LocalResumableUpload) => void;
@@ -76,6 +77,7 @@ function today(): string {
 }
 
 export default function UploadQueuePage({
+  embedded = false,
   organizationId,
   permissions,
   onOpenResult
@@ -86,6 +88,7 @@ export default function UploadQueuePage({
   const [file, setFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState("goods_receipt");
   const [autoReceive, setAutoReceive] = useState(true);
+  const [autoReceiveApproved, setAutoReceiveApproved] = useState(false);
   const [periodStart, setPeriodStart] = useState(today());
   const [periodEnd, setPeriodEnd] = useState(today());
   const [externalReportId, setExternalReportId] = useState("");
@@ -107,6 +110,15 @@ export default function UploadQueuePage({
   const aiDocumentType = ["goods_receipt", "delivery_note"].includes(
     documentType
   );
+  const requiresAutoReceiptApproval =
+    targetType === "DOCUMENT" &&
+    autoReceive &&
+    canAutoReceive &&
+    aiDocumentType;
+  const formReady =
+    Boolean(file) &&
+    (targetType !== "VRP" || Boolean(periodStart && periodEnd)) &&
+    (!requiresAutoReceiptApproval || autoReceiveApproved);
 
   const refreshQueue = useCallback(async () => {
     setUploads(await listLocalUploads(organizationId));
@@ -368,6 +380,7 @@ export default function UploadQueuePage({
     setFile(null);
     if (fileInput.current) fileInput.current.value = "";
     setExternalReportId("");
+    setAutoReceiveApproved(false);
     setQueueMessage(
       navigator.onLine
         ? "A fájl bekerült a sorba, a feltöltés elindult."
@@ -427,7 +440,7 @@ export default function UploadQueuePage({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <header className="workspace-header upload-queue-header">
+      {!embedded && <header className="workspace-header upload-queue-header">
         <div>
           <p className="eyebrow">Offline fájlátadás</p>
           <h1>Feltöltési sor</h1>
@@ -440,7 +453,7 @@ export default function UploadQueuePage({
           {online ? <Wifi aria-hidden="true" /> : <WifiOff aria-hidden="true" />}
           {online ? "Online szinkron" : "Offline várólista"}
         </span>
-      </header>
+      </header>}
 
       <section className="upload-metrics" aria-label="Feltöltési mutatók">
         <div>
@@ -557,7 +570,10 @@ export default function UploadQueuePage({
                 <input
                   type="checkbox"
                   checked={autoReceive}
-                  onChange={(event) => setAutoReceive(event.target.checked)}
+                  onChange={(event) => {
+                    setAutoReceive(event.target.checked);
+                    if (!event.target.checked) setAutoReceiveApproved(false);
+                  }}
                   disabled={!canAutoReceive || !aiDocumentType}
                 />
                 <Sparkles aria-hidden="true" />
@@ -572,6 +588,25 @@ export default function UploadQueuePage({
                   </small>
                 </span>
               </label>
+              {requiresAutoReceiptApproval && (
+                <label className="ai-safety-consent">
+                  <input
+                    type="checkbox"
+                    checked={autoReceiveApproved}
+                    onChange={(event) =>
+                      setAutoReceiveApproved(event.target.checked)
+                    }
+                  />
+                  <span>
+                    <strong>Automatikus készletmódosítás engedélyezése</strong>
+                    <small>
+                      Csak a legalább 98%-os egyezések könyvelődnek; a többi az
+                      Ellenőrzendő fülre kerül. A könyvelt bevételezés
+                      visszavonható.
+                    </small>
+                  </span>
+                </label>
+              )}
             </>
           ) : (
             <div className="upload-period-fields">
@@ -606,10 +641,20 @@ export default function UploadQueuePage({
 
           {formError && <p className="form-error">{formError}</p>}
           {queueMessage && <p className="form-success">{queueMessage}</p>}
-          <button className="primary-button" type="button" onClick={addToQueue}>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={addToQueue}
+            disabled={!formReady}
+          >
             <CloudUpload aria-hidden="true" />
             Hozzáadás a sorhoz
           </button>
+          {!file && (
+            <p className="form-required-note">
+              A sorba állításhoz előbb válassz ki vagy fényképezz le egy fájlt.
+            </p>
+          )}
         </div>
       </section>
 

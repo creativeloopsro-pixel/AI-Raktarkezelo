@@ -6,11 +6,12 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.12.0` - a Beállítások oldalon szervezetenként megadható, cserélhető és
-eltávolítható Ollama AI API-kulcs, titkosított tárolással és maszkolt
-visszajelzéssel. A dokumentumfeldolgozó worker automatikusan az adott szervezet
-kulcsát használja. A kiadás tartalmazza továbbá az önálló termékkatalógust,
-a vonalkódos készlet-hozzáadást és a szállítólevélből indítható AI-bevételezést.
+`0.13.0` - UX-biztonsági kiadás valódi, frissíthető és vissza-navigálható
+útvonalakkal; összevont Dokumentumok munkatérrel; legfeljebb öt elemes mobil
+alsó navigációval; kereshető, harmonikás szerepkör- és API-hatókör
+szerkesztővel. A szállítólevélből indított AI-folyamat készletmódosítás előtti
+tételösszegzést, külön jóváhagyást és auditált, idempotens közvetlen
+visszavonást kapott.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

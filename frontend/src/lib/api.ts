@@ -375,6 +375,16 @@ export function confirmGoodsReceipt(draftId: string): Promise<GoodsReceiptDraft>
   });
 }
 
+export function reverseGoodsReceipt(
+  draftId: string,
+  reason: string
+): Promise<GoodsReceiptDraft> {
+  return request<GoodsReceiptDraft>(`/goods-receipts/${draftId}/reverse`, {
+    method: "POST",
+    body: JSON.stringify({ reason })
+  });
+}
+
 export async function downloadDocument(document: DocumentItem): Promise<void> {
   let session = readSession();
   if (!session) throw new ApiError("A munkamenet lejárt.", 401);

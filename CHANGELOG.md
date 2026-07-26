@@ -4,6 +4,40 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.13.0] - 2026-07-26
+
+### Hozzáadva
+
+- Valódi, böngészőelőzménnyel, frissítéssel és közvetlen megnyitással működő
+  útvonalak a fő munkaterületekhez, dokumentumrészletekhez, identity fülekhez
+  és az AI-beállításokhoz.
+- Kereshető, harmonikás jogosultságválasztó kijelölt darabszámmal,
+  20 képpontos jelölőnégyzetekkel és mobilon is elérhető, rögzített
+  műveletsávval a szerepkörökhöz és API-tokenekhez.
+- AI-bevételezési biztonsági előnézet, amely a készletmódosítás előtt külön
+  megmutatja a készletre helyezhető és az ellenőrzendő tételek számát.
+- Auditált, idempotens `POST /api/v1/goods-receipts/{id}/reverse` végpont és
+  közvetlen felületi visszavonás a dokumentumból könyvelt készletmozgásokhoz.
+
+### Módosítva
+
+- A Dokumentumok, Feltöltési sor és Ellenőrzések egyetlen Dokumentumok
+  munkatér három füle lett: **Beérkezett**, **Feltöltés alatt**,
+  **Ellenőrzendő**.
+- A mobil alsó navigáció legfeljebb öt célra egyszerűsödött:
+  **Kezdő**, **Termékek**, kiemelt **Bevételezés**, **Leltár**, **Több**.
+  A ritkábban használt modulok rendezett alsó panelről érhetők el.
+- A szállítólevélből indított AI-folyamat előbb elemez és összesít, majd csak
+  felhasználói jóváhagyással módosít készletet. A folytatható feltöltési sorban
+  az automatikus könyvelés külön kockázati megerősítést kér.
+
+### Javítva
+
+- Az üres újtermék-űrlap és a fájl nélküli feltöltési művelet már nem indítható;
+  a hiányzó kötelező adatok látható magyarázatot kapnak.
+- A mobil identity fülek nem vízszintesen rejtőznek el, a jogosultságlistákon
+  nincs egymásba ágyazott belső görgetés vagy alsó navigáció által takart gomb.
+
 ## [0.12.0] - 2026-07-26
 
 ### Hozzáadva

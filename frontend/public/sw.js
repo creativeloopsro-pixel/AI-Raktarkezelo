@@ -1,4 +1,4 @@
-const CACHE_NAME = "ai-raktar-shell-v0.12.0";
+const CACHE_NAME = "ai-raktar-shell-v0.13.0";
 const SHELL_ASSETS = ["/", "/index.html", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

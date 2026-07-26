@@ -11,6 +11,7 @@ import {
   LoaderCircle,
   Search,
   ShieldCheck,
+  Undo2,
   UploadCloud
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ import {
   queueDocument
 } from "../lib/api";
 type Props = {
+  embedded?: boolean;
   onUpload: () => void;
   onOpenReviews: () => void;
   onOpenReceipt: (documentId: string) => void;
@@ -33,7 +35,8 @@ const statusLabels: Record<string, string> = {
   RETRY: "Újrapróbálás",
   READY_FOR_CONFIRMATION: "Jóváhagyható",
   COMPLETED: "Kész",
-  FAILED: "Hiba"
+  FAILED: "Hiba",
+  REVERSED: "Visszavonva"
 };
 
 function formatBytes(bytes: number): string {
@@ -53,6 +56,7 @@ function formatDate(value: string): string {
 }
 
 export default function DocumentsPage({
+  embedded = false,
   onUpload,
   onOpenReviews,
   onOpenReceipt
@@ -105,7 +109,7 @@ export default function DocumentsPage({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32 }}
     >
-      <header className="workspace-header">
+      {!embedded && <header className="workspace-header">
         <div>
           <p className="eyebrow">Bejövő bizonylatok</p>
           <h1>Dokumentumok</h1>
@@ -121,7 +125,7 @@ export default function DocumentsPage({
             Feltöltés
           </button>
         </div>
-      </header>
+      </header>}
 
       <section className="document-summary" aria-label="Dokumentumstátuszok">
         <div>
@@ -237,7 +241,9 @@ export default function DocumentsPage({
                     </td>
                     <td>
                       <span className={`document-status ${document.status.toLowerCase()}`}>
-                        {document.status === "NEEDS_REVIEW" ? (
+                        {document.status === "REVERSED" ? (
+                          <Undo2 aria-hidden="true" />
+                        ) : document.status === "NEEDS_REVIEW" ? (
                           <AlertTriangle aria-hidden="true" />
                         ) : ["UPLOADED", "READY_FOR_CONFIRMATION", "COMPLETED"].includes(
                             document.status
@@ -276,12 +282,14 @@ export default function DocumentsPage({
                             Ellenőrzés
                           </button>
                         )}
-                        {["READY_FOR_CONFIRMATION", "COMPLETED"].includes(document.status) && (
+                        {["READY_FOR_CONFIRMATION", "COMPLETED", "REVERSED"].includes(document.status) && (
                           <button
                             className="text-button"
                             onClick={() => onOpenReceipt(document.id)}
                           >
-                            {document.status === "COMPLETED" ? "Részletek" : "Előnézet"}
+                            {document.status === "READY_FOR_CONFIRMATION"
+                              ? "Előnézet"
+                              : "Részletek"}
                           </button>
                         )}
                       </div>

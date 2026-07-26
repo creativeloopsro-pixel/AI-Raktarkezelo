@@ -1,4 +1,12 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+} from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -17,11 +25,13 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  MoreHorizontal,
   PackagePlus,
   Puzzle,
   Search,
   Settings,
   UserCog,
+  X
 } from "lucide-react";
 
 import { getProducts, getStock } from "../lib/api";
@@ -67,38 +77,201 @@ type WorkspaceView =
   | "settings";
 
 type ReceiveMode = "delivery_note" | "barcode";
+type IdentityTab = "users" | "roles" | "security" | "tokens";
+
+type RouteState = {
+  view: WorkspaceView;
+  documentId: string | null;
+  vrpBatchId: string | null;
+  identityTab: IdentityTab;
+  settingsAi: boolean;
+};
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
+
+function readRoute(locked: boolean): RouteState {
+  if (locked) {
+    return {
+      view: "identity",
+      documentId: null,
+      vrpBatchId: null,
+      identityTab: "security",
+      settingsAi: false
+    };
+  }
+
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const legacyView = new URLSearchParams(window.location.search).get("view");
+  const defaults: RouteState = {
+    view: "overview",
+    documentId: null,
+    vrpBatchId: null,
+    identityTab: "users",
+    settingsAi: false
+  };
+
+  if (path === "/" && legacyView) {
+    const legacyMap: Partial<Record<string, WorkspaceView>> = {
+      products: "products",
+      inventory: "inventory",
+      uploads: "uploads",
+      settings: "settings"
+    };
+    return { ...defaults, view: legacyMap[legacyView] ?? "overview" };
+  }
+  if (path === "/dashboard" || path === "/") return defaults;
+  if (path === "/products") return { ...defaults, view: "products" };
+  if (path === "/inventory") return { ...defaults, view: "inventory" };
+  if (path === "/documents") return { ...defaults, view: "documents" };
+  if (path === "/documents/uploads") return { ...defaults, view: "uploads" };
+  if (path === "/documents/reviews") return { ...defaults, view: "reviews" };
+  if (path.startsWith("/documents/receipts/")) {
+    return {
+      ...defaults,
+      view: "receipt",
+      documentId: decodeURIComponent(path.slice("/documents/receipts/".length))
+    };
+  }
+  if (path === "/vrp") return { ...defaults, view: "vrp" };
+  if (path.startsWith("/vrp/")) {
+    return {
+      ...defaults,
+      view: "vrp",
+      vrpBatchId: decodeURIComponent(path.slice("/vrp/".length))
+    };
+  }
+  if (path === "/email") return { ...defaults, view: "email" };
+  if (path === "/plugins") return { ...defaults, view: "plugins" };
+  if (path === "/settings" || path === "/settings/ai") {
+    return { ...defaults, view: "settings", settingsAi: path === "/settings/ai" };
+  }
+  const identityRoutes: Record<string, IdentityTab> = {
+    "/admin/users": "users",
+    "/admin/roles": "roles",
+    "/admin/security": "security",
+    "/admin/api-tokens": "tokens"
+  };
+  if (identityRoutes[path]) {
+    return {
+      ...defaults,
+      view: "identity",
+      identityTab: identityRoutes[path]
+    };
+  }
+  return defaults;
+}
+
+function routePath(route: RouteState): string {
+  if (route.view === "products") return "/products";
+  if (route.view === "inventory") return "/inventory";
+  if (route.view === "documents") return "/documents";
+  if (route.view === "uploads") return "/documents/uploads";
+  if (route.view === "reviews") return "/documents/reviews";
+  if (route.view === "receipt" && route.documentId) {
+    return `/documents/receipts/${encodeURIComponent(route.documentId)}`;
+  }
+  if (route.view === "vrp") {
+    return route.vrpBatchId
+      ? `/vrp/${encodeURIComponent(route.vrpBatchId)}`
+      : "/vrp";
+  }
+  if (route.view === "email") return "/email";
+  if (route.view === "plugins") return "/plugins";
+  if (route.view === "settings") {
+    return route.settingsAi ? "/settings/ai" : "/settings";
+  }
+  if (route.view === "identity") {
+    const identityPaths: Record<IdentityTab, string> = {
+      users: "/admin/users",
+      roles: "/admin/roles",
+      security: "/admin/security",
+      tokens: "/admin/api-tokens"
+    };
+    return identityPaths[route.identityTab];
+  }
+  return "/dashboard";
+}
 
 export default function Dashboard({
   session,
   onSessionUpdated,
   onLogout
 }: Props) {
-  const [activeView, setActiveView] = useState<WorkspaceView>(() => {
-    if (session.mfa_setup_required) return "identity";
-    const requested = new URLSearchParams(window.location.search).get("view");
-    return requested === "products" ||
-      requested === "inventory" ||
-      requested === "uploads" ||
-      requested === "settings"
-      ? requested
-      : "overview";
-  });
+  const locked = session.mfa_setup_required;
+  const [initialRoute] = useState(() => readRoute(locked));
+  const [activeView, setActiveView] = useState<WorkspaceView>(initialRoute.view);
+  const [identityTab, setIdentityTab] = useState<IdentityTab>(
+    initialRoute.identityTab
+  );
+  const [settingsAi, setSettingsAi] = useState(initialRoute.settingsAi);
   const [search, setSearch] = useState("");
   const [productDialog, setProductDialog] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const [selectedVrpBatchId, setSelectedVrpBatchId] = useState<string | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    initialRoute.documentId
+  );
+  const [selectedVrpBatchId, setSelectedVrpBatchId] = useState<string | null>(
+    initialRoute.vrpBatchId
+  );
   const [reviewOrigin, setReviewOrigin] = useState<"documents" | "vrp">(
     "documents"
   );
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [stockMode, setStockMode] = useState<"receive" | "correct" | null>(null);
   const [receivingDialogMode, setReceivingDialogMode] =
     useState<ReceiveMode | null>(null);
 
   const permissions = session.user.permissions ?? [];
   const can = (permission: string) => permissions.includes(permission);
-  const locked = session.mfa_setup_required;
+  const navigateTo = useCallback(
+    (
+      view: WorkspaceView,
+      options: {
+        documentId?: string | null;
+        vrpBatchId?: string | null;
+        identityTab?: IdentityTab;
+        settingsAi?: boolean;
+        replace?: boolean;
+      } = {}
+    ) => {
+      const next: RouteState = {
+        view,
+        documentId: options.documentId ?? null,
+        vrpBatchId: options.vrpBatchId ?? null,
+        identityTab: options.identityTab ?? identityTab,
+        settingsAi: options.settingsAi ?? false
+      };
+      setActiveView(next.view);
+      setSelectedDocumentId(next.documentId);
+      setSelectedVrpBatchId(next.vrpBatchId);
+      setIdentityTab(next.identityTab);
+      setSettingsAi(next.settingsAi);
+      setMobileMoreOpen(false);
+      const nextPath = routePath(next);
+      if (`${window.location.pathname}${window.location.search}` !== nextPath) {
+        window.history[options.replace ? "replaceState" : "pushState"](
+          {},
+          "",
+          nextPath
+        );
+      }
+    },
+    [identityTab]
+  );
+
+  useEffect(() => {
+    window.history.replaceState({}, "", routePath(initialRoute));
+    const handlePopState = () => {
+      const next = readRoute(locked);
+      setActiveView(next.view);
+      setSelectedDocumentId(next.documentId);
+      setSelectedVrpBatchId(next.vrpBatchId);
+      setIdentityTab(next.identityTab);
+      setSettingsAi(next.settingsAi);
+      setMobileMoreOpen(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [initialRoute, locked]);
   const productsQuery = useQuery({
     queryKey: ["products"],
     queryFn: getProducts,
@@ -168,7 +341,7 @@ export default function Dashboard({
           {!locked && can("stock.read") && (
             <button
               className={`nav-item ${activeView === "overview" ? "active" : ""}`}
-              onClick={() => setActiveView("overview")}
+              onClick={() => navigateTo("overview")}
             >
               <LayoutDashboard aria-hidden="true" />
               Áttekintés
@@ -177,7 +350,7 @@ export default function Dashboard({
           {!locked && can("inventory.count") && (
             <button
               className={`nav-item ${activeView === "inventory" ? "active" : ""}`}
-              onClick={() => setActiveView("inventory")}
+              onClick={() => navigateTo("inventory")}
             >
               <ClipboardList aria-hidden="true" />
               Kézi leltár
@@ -186,7 +359,7 @@ export default function Dashboard({
           {!locked && can("products.read") && (
             <button
               className={`nav-item ${activeView === "products" ? "active" : ""}`}
-              onClick={() => setActiveView("products")}
+              onClick={() => navigateTo("products")}
             >
               <Barcode aria-hidden="true" />
               Termékek
@@ -195,33 +368,14 @@ export default function Dashboard({
           {!locked && can("documents.read") && (
             <button
               className={`nav-item ${
-                ["documents", "receipt"].includes(activeView) ? "active" : ""
+                ["documents", "uploads", "reviews", "receipt"].includes(activeView)
+                  ? "active"
+                  : ""
               }`}
-              onClick={() => setActiveView("documents")}
+              onClick={() => navigateTo("documents")}
             >
               <FileText aria-hidden="true" />
               Dokumentumok
-            </button>
-          )}
-          {!locked && (can("documents.upload") || can("vrp.upload")) && (
-            <button
-              className={`nav-item ${activeView === "uploads" ? "active" : ""}`}
-              onClick={() => setActiveView("uploads")}
-            >
-              <CloudUpload aria-hidden="true" />
-              Feltöltési sor
-            </button>
-          )}
-          {!locked && can("reviews.read") && (
-            <button
-              className={`nav-item ${activeView === "reviews" ? "active" : ""}`}
-              onClick={() => {
-                setReviewOrigin("documents");
-                setActiveView("reviews");
-              }}
-            >
-              <FileSearch aria-hidden="true" />
-              Ellenőrzések
             </button>
           )}
           {!locked && can("vrp.read") && (
@@ -229,7 +383,7 @@ export default function Dashboard({
               className={`nav-item ${activeView === "vrp" ? "active" : ""}`}
               onClick={() => {
                 setSelectedVrpBatchId(null);
-                setActiveView("vrp");
+                navigateTo("vrp");
               }}
             >
               <FileSpreadsheet aria-hidden="true" />
@@ -239,7 +393,7 @@ export default function Dashboard({
           {!locked && can("email.read") && (
             <button
               className={`nav-item ${activeView === "email" ? "active" : ""}`}
-              onClick={() => setActiveView("email")}
+              onClick={() => navigateTo("email")}
             >
               <Mail aria-hidden="true" />
               E-mail postafiók
@@ -248,7 +402,7 @@ export default function Dashboard({
           {!locked && can("plugins.read") && (
             <button
               className={`nav-item ${activeView === "plugins" ? "active" : ""}`}
-              onClick={() => setActiveView("plugins")}
+              onClick={() => navigateTo("plugins")}
             >
               <Puzzle aria-hidden="true" />
               Pluginok
@@ -256,7 +410,7 @@ export default function Dashboard({
           )}
           <button
             className={`nav-item ${activeView === "identity" ? "active" : ""}`}
-            onClick={() => setActiveView("identity")}
+            onClick={() => navigateTo("identity", { identityTab: "users" })}
           >
             <UserCog aria-hidden="true" />
             Felhasználók és biztonság
@@ -266,7 +420,7 @@ export default function Dashboard({
           {!locked && (
             <button
               className={`nav-item ${activeView === "settings" ? "active" : ""}`}
-              onClick={() => setActiveView("settings")}
+              onClick={() => navigateTo("settings")}
               aria-current={activeView === "settings" ? "page" : undefined}
             >
               <Settings aria-hidden="true" />
@@ -291,60 +445,112 @@ export default function Dashboard({
           <Suspense fallback={<div className="empty-state">Beállítások betöltése…</div>}>
             <SettingsPage
               session={session}
-              onNavigate={(target) => setActiveView(target)}
+              focusAi={settingsAi}
+              onNavigate={(target) => navigateTo(target)}
             />
           </Suspense>
         ) : activeView === "identity" ? (
           <Suspense fallback={<div className="empty-state">Identity betöltése…</div>}>
             <IdentityPage
+              key={identityTab}
               session={session}
               onSessionUpdated={onSessionUpdated}
-            />
-          </Suspense>
-        ) : activeView === "uploads" ? (
-          <Suspense fallback={<div className="empty-state">Feltöltési sor betöltése…</div>}>
-            <UploadQueuePage
-              organizationId={session.user.organization_id}
-              permissions={permissions}
-              onOpenResult={(upload) => {
-                if (upload.result_entity_type === "vrp_import_batch") {
-                  setSelectedVrpBatchId(upload.result_entity_id);
-                  setActiveView("vrp");
-                } else {
-                  setActiveView("documents");
-                }
+              initialTab={identityTab}
+              onTabChange={(tab) => {
+                setIdentityTab(tab);
+                navigateTo("identity", { identityTab: tab });
               }}
             />
           </Suspense>
-        ) : activeView === "documents" ? (
-          <DocumentsPage
-            onUpload={() => setActiveView("uploads")}
-            onOpenReviews={() => {
-              setReviewOrigin("documents");
-              setActiveView("reviews");
-            }}
-            onOpenReceipt={(documentId) => {
-              setSelectedDocumentId(documentId);
-              setActiveView("receipt");
-            }}
-          />
-        ) : activeView === "reviews" ? (
-          <ReviewTasksPage
-            onBack={() => setActiveView(reviewOrigin)}
-            onOpenReceipt={(documentId) => {
-              setSelectedDocumentId(documentId);
-              setActiveView("receipt");
-            }}
-            onOpenVrp={(batchId) => {
-              setSelectedVrpBatchId(batchId);
-              setActiveView("vrp");
-            }}
-          />
+        ) : ["documents", "uploads", "reviews"].includes(activeView) ? (
+          <div className="document-workspace">
+            <header className="workspace-header document-workspace-header">
+              <div>
+                <p className="eyebrow">Bejövő bizonylatok</p>
+                <h1>Dokumentumok</h1>
+                <p className="page-lead">
+                  Beérkezés, folytatható feltöltés és ellenőrzés egy munkatérben.
+                </p>
+              </div>
+            </header>
+            <nav className="document-workspace-tabs" aria-label="Dokumentumterületek">
+              {can("documents.read") && (
+                <button
+                  className={activeView === "documents" ? "active" : ""}
+                  onClick={() => navigateTo("documents")}
+                >
+                  <FileText aria-hidden="true" />
+                  Beérkezett
+                </button>
+              )}
+              {(can("documents.upload") || can("vrp.upload")) && (
+                <button
+                  className={activeView === "uploads" ? "active" : ""}
+                  onClick={() => navigateTo("uploads")}
+                >
+                  <CloudUpload aria-hidden="true" />
+                  Feltöltés alatt
+                </button>
+              )}
+              {can("reviews.read") && (
+                <button
+                  className={activeView === "reviews" ? "active" : ""}
+                  onClick={() => {
+                    setReviewOrigin("documents");
+                    navigateTo("reviews");
+                  }}
+                >
+                  <FileSearch aria-hidden="true" />
+                  Ellenőrzendő
+                </button>
+              )}
+            </nav>
+            {activeView === "uploads" ? (
+              <Suspense fallback={<div className="empty-state">Feltöltési sor betöltése…</div>}>
+                <UploadQueuePage
+                  embedded
+                  organizationId={session.user.organization_id}
+                  permissions={permissions}
+                  onOpenResult={(upload) => {
+                    if (upload.result_entity_type === "vrp_import_batch") {
+                      navigateTo("vrp", { vrpBatchId: upload.result_entity_id });
+                    } else {
+                      navigateTo("documents");
+                    }
+                  }}
+                />
+              </Suspense>
+            ) : activeView === "reviews" ? (
+              <ReviewTasksPage
+                embedded
+                onBack={() => navigateTo(reviewOrigin)}
+                onOpenReceipt={(documentId) =>
+                  navigateTo("receipt", { documentId })
+                }
+                onOpenVrp={(batchId) =>
+                  navigateTo("vrp", { vrpBatchId: batchId })
+                }
+              />
+            ) : (
+              <DocumentsPage
+                embedded
+                onUpload={() => navigateTo("uploads")}
+                onOpenReviews={() => {
+                  setReviewOrigin("documents");
+                  navigateTo("reviews");
+                }}
+                onOpenReceipt={(documentId) =>
+                  navigateTo("receipt", { documentId })
+                }
+              />
+            )}
+          </div>
         ) : activeView === "receipt" && selectedDocumentId ? (
           <ReceiptReviewPage
             documentId={selectedDocumentId}
             products={products}
-            onBack={() => setActiveView("documents")}
+            canReverse={can("stock.reverse")}
+            onBack={() => navigateTo("documents")}
           />
         ) : activeView === "vrp" ? (
           <VrpImportsPage
@@ -353,7 +559,7 @@ export default function Dashboard({
             initialBatchId={selectedVrpBatchId}
             onOpenReviews={() => {
               setReviewOrigin("vrp");
-              setActiveView("reviews");
+              navigateTo("reviews");
             }}
           />
         ) : activeView === "email" ? (
@@ -459,7 +665,7 @@ export default function Dashboard({
                 {can("inventory.count") && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setActiveView("inventory")}
+                    onClick={() => navigateTo("inventory")}
                   >
                     <ClipboardCheck aria-hidden="true" />
                     <span>
@@ -472,7 +678,7 @@ export default function Dashboard({
                 {(can("documents.upload") || can("vrp.upload")) && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setActiveView("uploads")}
+                    onClick={() => navigateTo("uploads")}
                   >
                     <CloudUpload aria-hidden="true" />
                     <span>
@@ -593,107 +799,142 @@ export default function Dashboard({
         )}
       </main>
 
-      <nav className="mobile-actions many" aria-label="Mobil gyorsműveletek">
+      <nav className="mobile-actions primary-mobile-nav" aria-label="Mobil navigáció">
         {!locked && can("stock.read") && (
           <button
             className={activeView === "overview" ? "accent" : ""}
-            onClick={() => setActiveView("overview")}
+            onClick={() => navigateTo("overview")}
           >
             <Home aria-hidden="true" />
             Kezdő
           </button>
         )}
+        {!locked && can("products.read") && (
+          <button
+            className={activeView === "products" ? "accent" : ""}
+            onClick={() => navigateTo("products")}
+          >
+            <Barcode aria-hidden="true" />
+            Termékek
+          </button>
+        )}
         {!locked && can("stock.receive") && (
-          <button onClick={() => setStockMode("receive")}>
-            <ArrowDownToLine aria-hidden="true" />
-            Bevétel
+          <button
+            className="mobile-receive-action"
+            onClick={() => {
+              if (
+                can("documents.upload") &&
+                can("documents.process") &&
+                can("receipts.confirm")
+              ) {
+                setReceivingDialogMode("delivery_note");
+              } else {
+                setStockMode("receive");
+              }
+            }}
+          >
+            <PackagePlus aria-hidden="true" />
+            Bevételezés
           </button>
         )}
         {!locked && can("inventory.count") && (
           <button
             className={activeView === "inventory" ? "accent" : ""}
-            onClick={() => setActiveView("inventory")}
+            onClick={() => navigateTo("inventory")}
           >
             <ClipboardList aria-hidden="true" />
             Leltár
           </button>
         )}
-        {!locked && (can("documents.upload") || can("vrp.upload")) && (
-          <button
-            className={activeView === "uploads" ? "accent" : ""}
-            onClick={() => setActiveView("uploads")}
-          >
-            <CloudUpload aria-hidden="true" />
-            Feltöltés
-          </button>
-        )}
-        {!locked && can("documents.read") && (
-          <button
-            className={
-              ["documents", "receipt"].includes(activeView) ? "accent" : ""
-            }
-            onClick={() => setActiveView("documents")}
-          >
-            <FileText aria-hidden="true" />
-            Iratok
-          </button>
-        )}
-        {!locked && can("email.read") && (
-          <button
-            className={activeView === "email" ? "accent" : ""}
-            onClick={() => setActiveView("email")}
-          >
-            <Mail aria-hidden="true" />
-            E-mail
-          </button>
-        )}
-        {!locked && can("vrp.read") && (
-          <button
-            className={activeView === "vrp" ? "accent" : ""}
-            onClick={() => {
-              setSelectedVrpBatchId(null);
-              setActiveView("vrp");
-            }}
-          >
-            <FileSpreadsheet aria-hidden="true" />
-            VRP
-          </button>
-        )}
-        {!locked && can("products.read") && (
-          <button
-            className={activeView === "products" ? "accent" : ""}
-            onClick={() => setActiveView("products")}
-          >
-            <PackagePlus aria-hidden="true" />
-            Termék
-          </button>
-        )}
-        {!locked && can("plugins.read") && (
-          <button
-            className={activeView === "plugins" ? "accent" : ""}
-            onClick={() => setActiveView("plugins")}
-          >
-            <Puzzle aria-hidden="true" />
-            Plugin
-          </button>
-        )}
         <button
-          className={activeView === "identity" ? "accent" : ""}
-          onClick={() => setActiveView("identity")}
+          className={
+            !["overview", "products", "inventory"].includes(activeView)
+              ? "accent"
+              : ""
+          }
+          onClick={() => setMobileMoreOpen(true)}
         >
-          <UserCog aria-hidden="true" />
-          Biztonság
+          <MoreHorizontal aria-hidden="true" />
+          Több
         </button>
-        {!locked && (
-          <button
-            className={activeView === "settings" ? "accent" : ""}
-            onClick={() => setActiveView("settings")}
-          >
-            <Settings aria-hidden="true" />
-            Beállítás
-          </button>
-        )}
       </nav>
+
+      <Dialog.Root open={mobileMoreOpen} onOpenChange={setMobileMoreOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="mobile-more-overlay" />
+          <Dialog.Content className="mobile-more-sheet">
+            <div className="mobile-more-heading">
+              <div>
+                <p className="section-label">Navigáció</p>
+                <Dialog.Title>További területek</Dialog.Title>
+              </div>
+              <Dialog.Close className="icon-button" aria-label="Bezárás">
+                <X aria-hidden="true" />
+              </Dialog.Close>
+            </div>
+            <div className="mobile-more-grid">
+              {!locked && can("documents.read") && (
+                <button onClick={() => navigateTo("documents")}>
+                  <FileText aria-hidden="true" />
+                  <span>
+                    <strong>Dokumentumok</strong>
+                    <small>Beérkezés, feltöltés, ellenőrzés</small>
+                  </span>
+                </button>
+              )}
+              {!locked && can("vrp.read") && (
+                <button onClick={() => navigateTo("vrp")}>
+                  <FileSpreadsheet aria-hidden="true" />
+                  <span>
+                    <strong>VRP-import</strong>
+                    <small>Riportok és automatizálás</small>
+                  </span>
+                </button>
+              )}
+              {!locked && can("email.read") && (
+                <button onClick={() => navigateTo("email")}>
+                  <Mail aria-hidden="true" />
+                  <span>
+                    <strong>E-mail</strong>
+                    <small>Bejövő bizonylatok</small>
+                  </span>
+                </button>
+              )}
+              {!locked && can("plugins.read") && (
+                <button onClick={() => navigateTo("plugins")}>
+                  <Puzzle aria-hidden="true" />
+                  <span>
+                    <strong>Pluginok</strong>
+                    <small>Bővítmények kezelése</small>
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={() => navigateTo("identity", { identityTab: "users" })}
+              >
+                <UserCog aria-hidden="true" />
+                <span>
+                  <strong>Felhasználók és biztonság</strong>
+                  <small>Szerepkörök, MFA, API-tokenek</small>
+                </span>
+              </button>
+              {!locked && (
+                <button onClick={() => navigateTo("settings")}>
+                  <Settings aria-hidden="true" />
+                  <span>
+                    <strong>Beállítások</strong>
+                    <small>AI-kulcs és rendszerbeállítások</small>
+                  </span>
+                </button>
+              )}
+            </div>
+            <button className="mobile-more-logout" onClick={onLogout}>
+              <LogOut aria-hidden="true" />
+              Kijelentkezés
+            </button>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       <Suspense fallback={null}>
         {productDialog ? (

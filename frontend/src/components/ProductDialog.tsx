@@ -27,12 +27,20 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
   const [scannerMessage, setScannerMessage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const eanError = getEanValidationMessage(barcode);
+  const minStockValue = Number(minStock);
+  const formValid =
+    Boolean(name.trim()) &&
+    Boolean(sku.trim()) &&
+    Boolean(barcode) &&
+    !eanError &&
+    Number.isFinite(minStockValue) &&
+    minStockValue >= 0;
 
   const mutation = useMutation({
     mutationFn: () =>
       createProduct({
-        name,
-        internal_sku: sku,
+        name: name.trim(),
+        internal_sku: sku.trim(),
         base_unit: "piece",
         min_stock: Number(minStock),
         packaging_units: [],
@@ -66,7 +74,7 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
   function submit(event: FormEvent) {
     event.preventDefault();
     setSubmitted(true);
-    if (eanError) return;
+    if (!formValid) return;
     mutation.mutate();
   }
 
@@ -110,12 +118,30 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
           <form className="dialog-form" onSubmit={submit}>
             <label>
               Terméknév
-              <input value={name} onChange={(event) => setName(event.target.value)} required />
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                onBlur={() => setSubmitted(true)}
+                aria-invalid={submitted && !name.trim()}
+                required
+              />
+              {submitted && !name.trim() && (
+                <small className="field-error">A terméknév kötelező.</small>
+              )}
             </label>
             <div className="form-grid">
               <label>
                 Belső SKU
-                <input value={sku} onChange={(event) => setSku(event.target.value)} required />
+                <input
+                  value={sku}
+                  onChange={(event) => setSku(event.target.value)}
+                  onBlur={() => setSubmitted(true)}
+                  aria-invalid={submitted && !sku.trim()}
+                  required
+                />
+                {submitted && !sku.trim() && (
+                  <small className="field-error">A belső SKU kötelező.</small>
+                )}
               </label>
               <label>
                 Minimumkészlet
@@ -125,6 +151,7 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
                   step="1"
                   value={minStock}
                   onChange={(event) => setMinStock(event.target.value)}
+                  onBlur={() => setSubmitted(true)}
                   required
                 />
               </label>
@@ -147,6 +174,7 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
                       setBarcode(normalizeEan(event.target.value));
                       setScannerMessage(null);
                     }}
+                    onBlur={() => setSubmitted(true)}
                     placeholder="8 vagy 13 számjegy"
                     aria-invalid={submitted && Boolean(eanError)}
                     aria-describedby={
@@ -215,11 +243,16 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
               <button
                 className="primary-button"
                 type="submit"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || !formValid}
               >
                 {mutation.isPending ? "Mentés…" : "Termék létrehozása"}
               </button>
             </div>
+            {!formValid && (
+              <p className="form-required-note">
+                A terméknév, a belső SKU és egy érvényes EAN-kód kötelező.
+              </p>
+            )}
           </form>
         </Dialog.Content>
       </Dialog.Portal>

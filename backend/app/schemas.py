@@ -543,6 +543,10 @@ class GoodsReceiptItemUpdate(BaseModel):
     quantity: Decimal = Field(gt=0, decimal_places=3)
 
 
+class GoodsReceiptReverse(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
 class VrpImportItemRead(ApiModel):
     id: str
     line_number: int

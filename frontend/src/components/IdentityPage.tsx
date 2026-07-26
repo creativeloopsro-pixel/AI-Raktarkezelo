@@ -4,12 +4,14 @@ import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
+  ChevronDown,
   Copy,
   KeyRound,
   Laptop,
   LockKeyhole,
   Plus,
   Save,
+  Search,
   ShieldCheck,
   Smartphone,
   Trash2,
@@ -48,6 +50,8 @@ import type {
 type Props = {
   session: Session;
   onSessionUpdated: (session: Session) => void;
+  initialTab?: Tab;
+  onTabChange?: (tab: Tab) => void;
 };
 
 type Tab = "users" | "roles" | "security" | "tokens";
@@ -77,9 +81,128 @@ function groupPermissions(permissions: PermissionItem[]) {
   }, {});
 }
 
-export default function IdentityPage({ session, onSessionUpdated }: Props) {
+function PermissionPicker({
+  permissions,
+  selected,
+  onChange,
+  disabled = false,
+  lockedCode
+}: {
+  permissions: PermissionItem[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  disabled?: boolean;
+  lockedCode?: (code: string) => boolean;
+}) {
+  const grouped = useMemo(() => groupPermissions(permissions), [permissions]);
+  const categories = Object.keys(grouped);
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string[] | null>(null);
+  const needle = search.trim().toLocaleLowerCase("hu");
+  const visibleGroups = Object.entries(grouped)
+    .map(([category, items]) => [
+      category,
+      items.filter(
+        (permission) =>
+          !needle ||
+          permission.name.toLocaleLowerCase("hu").includes(needle) ||
+          permission.code.toLocaleLowerCase("hu").includes(needle)
+      )
+    ] as const)
+    .filter(([, items]) => items.length > 0);
+
+  function toggle(code: string, checked: boolean) {
+    onChange(
+      checked
+        ? Array.from(new Set([...selected, code]))
+        : selected.filter((current) => current !== code)
+    );
+  }
+
+  return (
+    <div className="permission-picker">
+      <div className="permission-picker-toolbar">
+        <label className="permission-search">
+          <Search aria-hidden="true" />
+          <span className="sr-only">Jogosultság keresése</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Jogosultság keresése"
+          />
+        </label>
+        <strong>{selected.length} kiválasztva</strong>
+      </div>
+      <div className="permission-accordion">
+        {visibleGroups.map(([category, items]) => {
+          const resolvedExpanded = expanded ?? categories.slice(0, 1);
+          const isExpanded =
+            Boolean(needle) || resolvedExpanded.includes(category);
+          const selectedInCategory = items.filter((item) =>
+            selected.includes(item.code)
+          ).length;
+          return (
+            <section className="permission-category" key={category}>
+              <button
+                type="button"
+                className="permission-category-toggle"
+                aria-expanded={isExpanded}
+                onClick={() =>
+                  setExpanded((current) => {
+                    const resolved = current ?? categories.slice(0, 1);
+                    return resolved.includes(category)
+                      ? resolved.filter((item) => item !== category)
+                      : [...resolved, category];
+                  })
+                }
+              >
+                <span>
+                  <strong>{permissionCategoryLabels[category] ?? category}</strong>
+                  <small>
+                    {selectedInCategory}/{items.length} engedély
+                  </small>
+                </span>
+                <ChevronDown aria-hidden="true" />
+              </button>
+              {isExpanded && (
+                <div className="permission-category-items">
+                  {items.map((permission) => (
+                    <label key={permission.code}>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(permission.code)}
+                        disabled={disabled || Boolean(lockedCode?.(permission.code))}
+                        onChange={(event) =>
+                          toggle(permission.code, event.target.checked)
+                        }
+                      />
+                      <span>
+                        <strong>{permission.name}</strong>
+                        <small>{permission.code}</small>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
+        {visibleGroups.length === 0 && (
+          <p className="permission-empty">Nincs a keresésnek megfelelő engedély.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function IdentityPage({
+  session,
+  onSessionUpdated,
+  initialTab,
+  onTabChange
+}: Props) {
   const [tab, setTab] = useState<Tab>(
-    session.mfa_setup_required ? "security" : "users"
+    session.mfa_setup_required ? "security" : initialTab ?? "users"
   );
   const canReadUsers = session.user.permissions.includes("users.read");
   const canWriteUsers = session.user.permissions.includes("users.write");
@@ -167,7 +290,10 @@ export default function IdentityPage({ session, onSessionUpdated }: Props) {
               key={item.id}
               className={tab === item.id ? "active" : ""}
               disabled={session.mfa_setup_required && item.id !== "security"}
-              onClick={() => setTab(item.id)}
+              onClick={() => {
+                setTab(item.id);
+                onTabChange?.(item.id);
+              }}
             >
               <Icon aria-hidden="true" />
               {item.label}
@@ -572,8 +698,6 @@ function RoleEditor({
   const [description, setDescription] = useState(role?.description ?? "");
   const [selected, setSelected] = useState<string[]>(role?.permission_codes ?? []);
   const [error, setError] = useState("");
-  const groups = groupPermissions(permissions);
-
   const saveMutation = useMutation({
     mutationFn: () =>
       role
@@ -644,43 +768,39 @@ function RoleEditor({
           disabled={!canWrite}
         />
       </label>
-      <div className="permission-groups">
-        {Object.entries(groups).map(([category, items]) => (
-          <fieldset key={category}>
-            <legend>{permissionCategoryLabels[category] ?? category}</legend>
-            {items.map((permission) => (
-              <label key={permission.code}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(permission.code)}
-                  disabled={!canWrite || (role?.slug === "admin" && permission.code === "system.admin")}
-                  onChange={(event) =>
-                    setSelected((current) =>
-                      event.target.checked
-                        ? [...current, permission.code]
-                        : current.filter((code) => code !== permission.code)
-                    )
-                  }
-                />
-                <span>
-                  <strong>{permission.name}</strong>
-                  <small>{permission.code}</small>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        ))}
+      <div className="permission-editor-section">
+        <div>
+          <p className="section-label">Engedélyek</p>
+          <h3>Mit érhet el ez a szerepkör?</h3>
+        </div>
+        <PermissionPicker
+          permissions={permissions}
+          selected={selected}
+          onChange={setSelected}
+          disabled={!canWrite}
+          lockedCode={(code) =>
+            role?.slug === "admin" && code === "system.admin"
+          }
+        />
       </div>
       {error && <p className="form-error">{error}</p>}
       {canWrite && (
-        <button
-          className="primary-button"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending || selected.length === 0}
-        >
-          <Save aria-hidden="true" />
-          {saveMutation.isPending ? "Mentés…" : "Jogosultságok mentése"}
-        </button>
+        <div className="permission-action-bar">
+          <span>{selected.length} engedély lesz mentve</span>
+          <button
+            className="primary-button"
+            onClick={() => saveMutation.mutate()}
+            disabled={
+              saveMutation.isPending ||
+              selected.length === 0 ||
+              !name.trim() ||
+              (!role && !slug.trim())
+            }
+          >
+            <Save aria-hidden="true" />
+            {saveMutation.isPending ? "Mentés…" : "Jogosultságok mentése"}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -915,7 +1035,30 @@ function TokensPanel({
   const [scopes, setScopes] = useState<string[]>([]);
   const [created, setCreated] = useState<CreatedApiToken | null>(null);
   const [error, setError] = useState("");
-  const grouped = useMemo(() => groupPermissions(permissions), [permissions]);
+  const presets = [
+    {
+      label: "Csak olvasás",
+      scopes: permissions
+        .filter((permission) => permission.code.endsWith(".read"))
+        .map((permission) => permission.code)
+    },
+    {
+      label: "Készletkezelés",
+      scopes: permissions
+        .filter((permission) =>
+          /^(products|stock|inventory)\./.test(permission.code)
+        )
+        .map((permission) => permission.code)
+    },
+    {
+      label: "Dokumentum AI",
+      scopes: permissions
+        .filter((permission) =>
+          /^(documents|receipts|reviews)\./.test(permission.code)
+        )
+        .map((permission) => permission.code)
+    }
+  ];
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -1003,38 +1146,37 @@ function TokensPanel({
               onChange={(event) => setExpiry(event.target.value)}
             />
           </label>
-          <div className="token-scope-groups">
-            {Object.entries(grouped).map(([category, items]) => (
-              <fieldset key={category}>
-                <legend>{permissionCategoryLabels[category] ?? category}</legend>
-                {items.map((permission) => (
-                  <label key={permission.code}>
-                    <input
-                      type="checkbox"
-                      checked={scopes.includes(permission.code)}
-                      onChange={(event) =>
-                        setScopes((current) =>
-                          event.target.checked
-                            ? [...current, permission.code]
-                            : current.filter((code) => code !== permission.code)
-                        )
-                      }
-                    />
-                    <span>{permission.name}</span>
-                  </label>
-                ))}
-              </fieldset>
+          <div className="token-scope-presets" aria-label="Hatókörsablonok">
+            <span>Gyors sablon:</span>
+            {presets.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => setScopes(preset.scopes)}
+              >
+                {preset.label}
+              </button>
             ))}
           </div>
+          <PermissionPicker
+            permissions={permissions}
+            selected={scopes}
+            onChange={setScopes}
+          />
           {error && <p className="form-error">{error}</p>}
-          <button
-            className="primary-button"
-            onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending || !name || scopes.length === 0}
-          >
-            <Plus aria-hidden="true" />
-            Token létrehozása
-          </button>
+          <div className="permission-action-bar">
+            <span>{scopes.length} hatókör</span>
+            <button
+              className="primary-button"
+              onClick={() => createMutation.mutate()}
+              disabled={
+                createMutation.isPending || !name.trim() || scopes.length === 0
+              }
+            >
+              <Plus aria-hidden="true" />
+              Token létrehozása
+            </button>
+          </div>
           {created && (
             <div className="raw-token-panel">
               <strong>Másold ki most</strong>

@@ -22,19 +22,24 @@ import {
   PackageCheck,
   ScanBarcode,
   Sparkles,
+  Undo2,
   UploadCloud,
   X
 } from "lucide-react";
 
 import {
+  confirmGoodsReceipt,
   getDocuments,
+  getGoodsReceipt,
   getProductByCode,
   receiveStock,
+  reverseGoodsReceipt,
   uploadDocument
 } from "../lib/api";
 import type {
   Barcode as ProductBarcode,
   DocumentItem,
+  GoodsReceiptDraft,
   PackagingUnit,
   Product,
   StockBalance
@@ -252,7 +257,9 @@ export default function ProductReceivingDialog({
   const [barcodeMessage, setBarcodeMessage] = useState("");
   const [barcodeMessageTone, setBarcodeMessageTone] =
     useState<"success" | "error">("error");
+  const [reverseConfirm, setReverseConfirm] = useState(false);
   const canReadDocuments = permissions.includes("documents.read");
+  const canReverseReceipt = permissions.includes("stock.reverse");
   const allowDeliveryNote =
     permissions.includes("documents.upload") &&
     permissions.includes("documents.process") &&
@@ -274,7 +281,7 @@ export default function ProductReceivingDialog({
     mutationFn: (selectedFile: File) =>
       uploadDocument(selectedFile, "delivery_note", {
         autoProcess: true,
-        autoConfirm: true
+        autoConfirm: false
       }),
     onSuccess: async (document) => {
       setUploadedDocument(document);
@@ -305,6 +312,54 @@ export default function ProductReceivingDialog({
   });
   const currentDocument =
     documentStatusQuery.data ?? uploadedDocument ?? undefined;
+  const receiptQuery = useQuery<GoodsReceiptDraft>({
+    queryKey: ["delivery-note-receipt-preview", currentDocument?.id],
+    queryFn: () => getGoodsReceipt(currentDocument!.id),
+    enabled: Boolean(
+      currentDocument &&
+        ["READY_FOR_CONFIRMATION", "NEEDS_REVIEW", "COMPLETED", "REVERSED"].includes(
+          currentDocument.status
+        )
+    ),
+    retry: false
+  });
+  const receipt = receiptQuery.data;
+  const readyItemCount =
+    receipt?.items.filter((item) => item.status === "READY").length ?? 0;
+  const reviewItemCount = (receipt?.items.length ?? 0) - readyItemCount;
+
+  const confirmReceiptMutation = useMutation({
+    mutationFn: (draftId: string) => confirmGoodsReceipt(draftId),
+    onSuccess: async (confirmed) => {
+      queryClient.setQueryData(
+        ["delivery-note-receipt-preview", currentDocument?.id],
+        confirmed
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["stock"] }),
+        queryClient.invalidateQueries({ queryKey: ["documents"] }),
+        queryClient.invalidateQueries({ queryKey: ["products"] })
+      ]);
+    }
+  });
+  const reverseReceiptMutation = useMutation({
+    mutationFn: (draftId: string) =>
+      reverseGoodsReceipt(
+        draftId,
+        "Bevételezési párbeszédablakból visszavont AI-bevételezés"
+      ),
+    onSuccess: async (reversed) => {
+      setReverseConfirm(false);
+      queryClient.setQueryData(
+        ["delivery-note-receipt-preview", currentDocument?.id],
+        reversed
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["stock"] }),
+        queryClient.invalidateQueries({ queryKey: ["documents"] })
+      ]);
+    }
+  });
 
   useEffect(() => {
     if (currentDocument?.status === "COMPLETED") {
@@ -371,6 +426,7 @@ export default function ProductReceivingDialog({
       setMatch(null);
       setBarcodeMessage("");
       setBarcodeMessageTone("error");
+      setReverseConfirm(false);
       uploadMutation.reset();
       lookupMutation.reset();
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -381,14 +437,90 @@ export default function ProductReceivingDialog({
 
   function renderProcessingState() {
     if (!currentDocument) return null;
-    if (currentDocument.status === "COMPLETED") {
+    if (receipt?.status === "REVERSED") {
       return (
         <div className="ai-receipt-status completed">
           <CheckCircle2 aria-hidden="true" />
           <span>
-            <strong>Automatikus bevételezés elkészült.</strong>
-            Az AI által biztosan azonosított tételek készletre kerültek.
+            <strong>A bevételezés visszavonva.</strong>
+            A kapcsolódó készletmozgások ellenmozgással helyreálltak.
           </span>
+        </div>
+      );
+    }
+    if (receipt?.status === "CONFIRMED") {
+      return (
+        <div className="ai-receipt-result">
+          <div className="ai-receipt-status completed">
+            <CheckCircle2 aria-hidden="true" />
+            <span>
+              <strong>{readyItemCount} tétel készletre került.</strong>
+              A jóváhagyott AI-bevételezés könyvelése elkészült.
+            </span>
+          </div>
+          {canReverseReceipt && (
+            <button
+              type="button"
+              className={reverseConfirm ? "danger-button confirming" : "danger-button"}
+              disabled={reverseReceiptMutation.isPending}
+              onClick={() => {
+                if (!reverseConfirm) {
+                  setReverseConfirm(true);
+                  return;
+                }
+                reverseReceiptMutation.mutate(receipt.id);
+              }}
+            >
+              <Undo2 aria-hidden="true" />
+              {reverseReceiptMutation.isPending
+                ? "Visszavonás…"
+                : reverseConfirm
+                  ? "Igen, készlet visszaállítása"
+                  : "Bevételezés visszavonása"}
+            </button>
+          )}
+        </div>
+      );
+    }
+    if (receipt) {
+      return (
+        <div className="ai-receipt-result">
+          <div
+            className={`ai-receipt-status ${
+              reviewItemCount > 0 ? "attention" : "completed"
+            }`}
+          >
+            {reviewItemCount > 0 ? (
+              <AlertTriangle aria-hidden="true" />
+            ) : (
+              <CheckCircle2 aria-hidden="true" />
+            )}
+            <span>
+              <strong>
+                {readyItemCount} készletre helyezhető · {reviewItemCount} ellenőrzendő
+              </strong>
+              A készlet csak az összegzés jóváhagyása után változik.
+            </span>
+          </div>
+          {receipt.status === "READY" && (
+            <button
+              type="button"
+              className="primary-button delivery-process-button"
+              disabled={confirmReceiptMutation.isPending}
+              onClick={() => confirmReceiptMutation.mutate(receipt.id)}
+            >
+              <PackageCheck aria-hidden="true" />
+              {confirmReceiptMutation.isPending
+                ? "Készletre helyezés…"
+                : `${readyItemCount} tétel készletre helyezése`}
+            </button>
+          )}
+          {(confirmReceiptMutation.error || reverseReceiptMutation.error) && (
+            <p className="form-error">
+              {confirmReceiptMutation.error?.message ||
+                reverseReceiptMutation.error?.message}
+            </p>
+          )}
         </div>
       );
     }
@@ -401,8 +533,8 @@ export default function ProductReceivingDialog({
         <div className="ai-receipt-status attention">
           <AlertTriangle aria-hidden="true" />
           <span>
-            <strong>Emberi ellenőrzés szükséges.</strong>
-            A bizonytalan tételek nem kerültek automatikusan készletre.
+            <strong>Az eredmény összesítése folyamatban.</strong>
+            A készlet az előnézet jóváhagyásáig nem változik.
           </span>
         </div>
       );
@@ -412,7 +544,7 @@ export default function ProductReceivingDialog({
         <Clock3 aria-hidden="true" />
         <span>
           <strong>Az AI feldolgozza a szállítólevelet.</strong>
-          A biztosan felismert termékeket automatikusan hozzáadja a készlethez.
+          A készlet az eredmény összesítéséig nem változik.
         </span>
       </div>
     );
@@ -540,9 +672,10 @@ export default function ProductReceivingDialog({
                   <div className="ai-auto-receive-note">
                     <Sparkles aria-hidden="true" />
                     <span>
-                      <strong>AI-felismerés és automatikus készletre helyezés</strong>
-                      Csak a legalább 98%-os, pontosan azonosított tételek kerülnek
-                      automatikusan készletre. A többi ellenőrzésre vár.
+                      <strong>AI-felismerés biztonsági előnézettel</strong>
+                      Az AI előbb megmutatja, hány tétel helyezhető készletre és
+                      hány kér ellenőrzést. Könyvelés csak jóváhagyás után történik,
+                      és utána közvetlenül visszavonható.
                     </span>
                   </div>
                   {(localError || uploadMutation.error) ? (
@@ -560,8 +693,8 @@ export default function ProductReceivingDialog({
                   >
                     <ImagePlus aria-hidden="true" />
                     {uploadMutation.isPending
-                      ? "Feltöltés és AI-feldolgozás…"
-                      : "AI-bevételezés indítása"}
+                      ? "Feltöltés és AI-elemzés…"
+                      : "AI-elemzés indítása"}
                   </button>
                 </>
               )}

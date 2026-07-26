@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.12.0 hatókör
+## 0.13.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -32,6 +32,10 @@ A Beállítások oldalon az arra jogosult felhasználó szervezetenként külön
 API-kulcsot adhat meg, cserélhet vagy törölhet. A kulcs titkosítva tárolódik,
 soha nem olvasható vissza, és az AI-worker futás közben a feladathoz tartozó
 szervezet beállítását használja.
+A kiadás a kritikus és magas UX-kockázatokat is lezárja: valódi URL-útvonalakat,
+ötcélú mobil navigációt, összevont dokumentummunkateret, kereshető és
+mobilbarát jogosultságszerkesztést, kötelezőmező-validációt, valamint
+készletkönyvelés előtti AI-összegzést és teljes bevételezés-visszavonást ad.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -44,6 +48,8 @@ szervezet beállítását használja.
 | Catalog | Termék, csomagolási egység, EAN/QR hozzárendelés |
 | Termékek PWA | Kereshető termékkatalógus, vizuális és numerikus EAN, közvetlen termék- és készlet-hozzáadás |
 | Segített bevételezés | Vonalkódos termékazonosítás aktuális/hozzáadott/eredmény készlettel, valamint fotózható szállítólevél AI-feldolgozással |
+| UX navigáció | Mélylinkelhető böngészőútvonalak, előzménykezelés, ötcélú mobil alsó sáv és „Több” panel |
+| Jogosultság UX | Kereshető harmonikák, kijelölésszámláló, scope-sablonok és rögzített mentési művelet |
 | Inventory | Egyenleg, append-only mozgás, idempotencia, korrekció, visszavonás |
 | Audit | Érzékeny műveletek append-only naplója correlation ID-val |
 | Events | Tranzakcióban létrehozott outbox esemény |
@@ -56,7 +62,7 @@ szervezet beállítását használja.
 | Worker | Dramatiq + Redis dispatch, adatbázisban tartós job, retry és stale-job helyreállítás |
 | AI audit | Modell-, prompt-, token-, idő- és tool-call metaadat minden kinyeréshez |
 | Product matching | Vonalkód, pontos név, lexikai egyezés és csomagolási konverzió |
-| Goods receipt | Ember által javítható tervezet, valamint magas konfidenciájú pontos egyezésnél automatikus, tranzakciós és idempotens készletkönyvelés |
+| Goods receipt | Ember által javítható tervezet, könyvelés előtti AI-összegzés, tranzakciós/idempotens készletkönyvelés és teljes ellenmozgásos visszavonás |
 | VRP parser | CSV, XLSX és géppel olvasható PDF, verziózott többnyelvű oszlopfelismerés |
 | VRP deduplikáció | Fájlhash, külső riportazonosító, kanonikus tételhash és adatbázis-egyediség |
 | VRP időszakvédelem | Szervezeten belüli időszakátfedés blokkolása és review feladat |

@@ -255,6 +255,27 @@ def test_ai_pipeline_auto_confirms_high_confidence_requested_receipt(
     )
     assert confirmation is not None
     assert confirmation.details["confirmation_source"] == "AI_AUTOMATIC"
+    receipt_service = GoodsReceiptService(session, resolved_settings)
+    reversed_draft = receipt_service.reverse(
+        user=user,
+        draft_id=confirmed.id,
+        reason="Hibás automatikus bevételezés teszt-visszavonása",
+        correlation_id="auto-receipt-reversal",
+    )
+    reversed_again = receipt_service.reverse(
+        user=user,
+        draft_id=confirmed.id,
+        reason="Ismételt idempotens visszavonás",
+        correlation_id="auto-receipt-reversal-repeated",
+    )
+
+    assert reversed_draft.status == "REVERSED"
+    assert reversed_again.status == "REVERSED"
+    session.refresh(balance)
+    assert balance.quantity == 0
+    assert session.scalar(select(func.count()).select_from(StockMovement)) == 2
+    session.refresh(document)
+    assert document.status == "REVERSED"
 
 
 def test_ai_pipeline_keeps_borderline_auto_receipt_for_manual_confirmation(
