@@ -1,7 +1,7 @@
 def test_version_endpoint(client) -> None:
     response = client.get("/api/v1/system/version")
     assert response.status_code == 200
-    assert response.json()["version"] == "0.8.2"
+    assert response.json()["version"] == "0.8.3"
 
 
 def test_login_product_creation_and_stock_correction(client) -> None:
@@ -15,6 +15,8 @@ def test_login_product_creation_and_stock_correction(client) -> None:
     )
     assert login_response.status_code == 200
     login_payload = login_response.json()
+    assert login_payload["mfa_setup_required"] is False
+    assert login_payload["user"]["mfa_required"] is False
     refresh_response = client.post(
         "/api/v1/auth/refresh",
         json={"refresh_token": login_payload["refresh_token"]},

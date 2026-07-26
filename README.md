@@ -6,9 +6,9 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.8.2` - működő, jogosultságtudatos Beállítások központ, részletes
-jogosultságkezelés, adminisztrátori MFA, védett munkamenetek és folytatható
-offline fájlfeltöltés.
+`0.8.3` - működő, jogosultságtudatos Beállítások központ, részletes
+jogosultságkezelés, opcionális adminisztrátori MFA, védett munkamenetek és
+folytatható offline fájlfeltöltés.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
@@ -60,8 +60,9 @@ darabokban folytatja a megszakított feltöltést.
 3. Nyisd meg a `http://localhost:8080` címet.
 4. Jelentkezz be az `.env` fájlban beállított szervezetazonosítóval, e-maillel
    és jelszóval.
-5. Az adminisztrátor első belépéskor állítsa be a hitelesítő alkalmazást, és
-   mentse el a csak egyszer megjelenő helyreállító kódokat.
+5. Az adminisztrátor a „Felhasználók és biztonság” oldalon igény szerint
+   beállíthatja a hitelesítő alkalmazást. Bekapcsoláskor mentse el a csak
+   egyszer megjelenő helyreállító kódokat.
 
 Az API dokumentációja: `http://localhost:8080/api/docs`.
 

@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func, select
 
+from app.config import get_settings
 from app.dependencies import CurrentUser, DbSession, require_permissions
 from app.models import Role, UserRole
 from app.schemas import (
@@ -113,7 +114,10 @@ def _user_read(
         roles=sorted(effective_role_slugs(session, user)),
         permissions=sorted(effective_permissions(session, user)),
         mfa_enabled=service.user_mfa_enabled(user.id),
-        mfa_required="admin" in effective_role_slugs(session, user),
+        mfa_required=(
+            get_settings().mfa_enforce_admin
+            and "admin" in effective_role_slugs(session, user)
+        ),
         is_active=user.is_active,
         created_at=user.created_at,
     )

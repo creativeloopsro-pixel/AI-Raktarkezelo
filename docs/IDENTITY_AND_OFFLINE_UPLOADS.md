@@ -32,15 +32,17 @@ GET/POST/DELETE       /api/v1/identity/tokens
 
 ## Adminisztrátori MFA
 
-Docker Compose alatt az `APP_MFA_ENFORCE_ADMIN=true` az alapértelmezett. Az
-adminisztrátor első belépése rövid életű hozzáférést ad kizárólag az MFA
-beállításához. A felhasználó a megjelenített `otpauth://` URI-t vagy kézi
-titkot hitelesítő alkalmazásba veszi fel, majd egy hatjegyű kóddal erősíti meg.
+Docker Compose alatt az `APP_MFA_ENFORCE_ADMIN=false` az alapértelmezett, ezért
+az adminisztrátor MFA nélkül is teljes munkamenetet kap. Az üzemeltető az
+`APP_MFA_ENFORCE_ADMIN=true` beállítással teheti kötelezővé az admin MFA-t; ekkor
+az első belépés rövid életű hozzáférést ad kizárólag az MFA beállításához. A
+felhasználó a megjelenített `otpauth://` URI-t vagy kézi titkot hitelesítő
+alkalmazásba veszi fel, majd egy hatjegyű kóddal erősíti meg.
 
 Sikeres megerősítéskor a rendszer egyszer használható helyreállító kódokat ad.
 Ezek csak egyszer jelennek meg, hash-elve kerülnek adatbázisba, és egy felhasznált
-kód többé nem fogadható el. Az MFA-t kötelező adminisztrátornál nem lehet
-kikapcsolni.
+kód többé nem fogadható el. Kötelező admin MFA esetén az adminisztrátor nem
+kapcsolhatja ki; opcionális módban a saját MFA kikapcsolható.
 
 ```text
 POST   /api/v1/auth/mfa/setup

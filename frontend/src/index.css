@@ -700,6 +700,10 @@ button:disabled {
   color: var(--accent-dark);
 }
 
+.status-dot.neutral {
+  color: var(--muted);
+}
+
 .status-dot.danger {
   color: var(--danger);
 }

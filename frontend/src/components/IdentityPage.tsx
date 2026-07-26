@@ -153,7 +153,7 @@ export default function IdentityPage({ session, onSessionUpdated }: Props) {
           <span>
             <small>Aktív védelem</small>
             <strong>
-              {session.user.mfa_enabled ? "MFA bekapcsolva" : "MFA beállítandó"}
+              {session.user.mfa_enabled ? "MFA bekapcsolva" : "MFA kikapcsolva"}
             </strong>
           </span>
         </div>
@@ -743,8 +743,8 @@ function SecurityPanel({
             <p className="section-label">Többtényezős hitelesítés</p>
             <h2>Hitelesítő alkalmazás</h2>
           </div>
-          <span className={`status-dot ${session.user.mfa_enabled ? "" : "warning"}`}>
-            {session.user.mfa_enabled ? "Aktív" : "Beállítandó"}
+          <span className={`status-dot ${session.user.mfa_enabled ? "" : "neutral"}`}>
+            {session.user.mfa_enabled ? "Aktív" : "Kikapcsolva"}
           </span>
         </div>
         {session.user.mfa_enabled ? (
@@ -802,7 +802,7 @@ function SecurityPanel({
         ) : (
           <>
             <p className="security-explainer">
-              Adminisztrátoroknál kötelező. A beállítás után egyszer megjelenő
+              Igény szerint bekapcsolható. A beállítás után egyszer megjelenő
               helyreállító kódokat biztonságos helyen kell tárolni.
             </p>
             <button

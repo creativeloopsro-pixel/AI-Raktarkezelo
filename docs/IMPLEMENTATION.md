@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.8.2 hatókör
+## 0.8.3 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -11,7 +11,8 @@ eseményszerződését és adminisztrációs felületét.
 Megvalósítja továbbá a második fázis kamerás kódolvasását, dedikált
 leltármenetét és offline számlálási sorát.
 Az identity réteg ebben a kiadásban részletes, szervezetenként kezelhető
-szerepkör- és engedélymodellre bővült, adminisztrátori MFA-val, védett
+szerepkör- és engedélymodellre bővült, opcionálisan kötelezővé tehető
+adminisztrátori MFA-val, védett
 munkamenetekkel és hatókörhöz kötött API-tokenekkel. A dokumentum- és
 VRP-feltöltések IndexedDB-várólistát és darabolt, folytatható szerveroldali
 feltöltési munkamenetet kaptak.

@@ -4,6 +4,25 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.8.3] - 2026-07-26
+
+### Javítva
+
+- A Docker Compose alapértelmezett admin MFA-kényszere kikapcsolva, ezért az
+  adminisztrátor MFA nélkül is a teljes dashboardot és a jogosultságai szerinti
+  menüt kapja meg bejelentkezés után.
+- A felhasználó-adminisztráció MFA-követelmény jelzése ugyanazt a szerveroldali
+  beállítást követi, mint a belépés és a védett műveletek.
+- Az MFA nélküli állapot feliratai az opcionális működést jelzik, nem kötelező
+  beállítást.
+
+### Biztonság
+
+- Az MFA beállítása, a helyreállító kódok és a hitelesítő kódos későbbi belépés
+  változatlanul elérhető. Az üzemeltető az
+  `APP_MFA_ENFORCE_ADMIN=true` beállítással továbbra is kötelezővé teheti az
+  admin MFA-t.
+
 ## [0.8.2] - 2026-07-26
 
 ### Módosítva
