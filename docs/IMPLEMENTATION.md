@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.8.0 hatókör
+## 0.8.1 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -15,9 +15,13 @@ szerepkör- és engedélymodellre bővült, adminisztrátori MFA-val, védett
 munkamenetekkel és hatókörhöz kötött API-tokenekkel. A dokumentum- és
 VRP-feltöltések IndexedDB-várólistát és darabolt, folytatható szerveroldali
 feltöltési munkamenetet kaptak.
+A Beállítások menüpont önálló, jogosultságtudatos konfigurációs központot kapott,
+amely a fiók-, MFA-, kapcsolat- és verzióállapot mellett a ténylegesen elérhető
+modulbeállításokhoz vezet.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
+| Beállítási központ | Önálló, reszponzív, jogosultság alapján szűrt fiók-, biztonsági és modulnavigáció |
 | Identity | Szervezethez kötött felhasználó, egyedi és rendszer-szerepkörök, finom engedélyek |
 | MFA | Adminisztrátori TOTP, egyszer használható helyreállító kódok és MFA-val védett munkamenet |
 | Sessions | Forgó refresh token, token-család újrahasználatának felismerése, eszközlista és visszavonás |

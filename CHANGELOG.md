@@ -4,6 +4,27 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.8.1] - 2026-07-26
+
+### Hozzáadva
+
+- Önálló, reszponzív Beállítások munkafelület fiók-, szerepkör-, MFA-,
+  kapcsolat-, PWA- és rendszerverzió-állapottal.
+- Jogosultság alapján szűrt konfigurációs kártyák a biztonsági, offline
+  feltöltési, VRP-, e-mail- és pluginmodulokhoz.
+- Közös frontend-verzióforrás, amelyet a belépési képernyő, az oldalsáv és a
+  Beállítások oldal egyaránt használ.
+
+### Javítva
+
+- A Beállítások menüpont többé nem a Felhasználók és biztonság nézetre mutató,
+  halvány ál-navigáció: saját aktív állapottal és tényleges céloldallal
+  rendelkezik.
+- A `?view=settings` PWA-mélyhivatkozás közvetlenül a Beállítások felületet
+  nyitja meg.
+- Mobilnézetben is megjelent a Beállítások gyorsművelet, a gyorsműveleti sáv
+  pedig tetszőleges számú jogosultságfüggő gombbal vízszintesen görgethető.
+
 ## [0.8.0] - 2026-07-25
 
 ### Hozzáadva

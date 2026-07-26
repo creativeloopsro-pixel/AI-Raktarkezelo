@@ -6,8 +6,9 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.8.0` - részletes jogosultságkezelés, adminisztrátori MFA, védett
-munkamenetek és folytatható offline fájlfeltöltés.
+`0.8.1` - működő, jogosultságtudatos Beállítások központ, részletes
+jogosultságkezelés, adminisztrátori MFA, védett munkamenetek és folytatható
+offline fájlfeltöltés.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

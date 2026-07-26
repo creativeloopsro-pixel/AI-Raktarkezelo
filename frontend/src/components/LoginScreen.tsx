@@ -4,6 +4,7 @@ import { ArrowRight, Boxes, KeyRound, ShieldCheck } from "lucide-react";
 
 import { login, verifyMfa } from "../lib/api";
 import type { Session } from "../types";
+import { APP_VERSION } from "../version";
 
 type Props = {
   onAuthenticated: (session: Session) => void;
@@ -159,7 +160,7 @@ export default function LoginScreen({ onAuthenticated }: Props) {
             <ArrowRight aria-hidden="true" />
           </button>
         </form>
-        <p className="version-label">Rendszerverzió 0.8.0</p>
+        <p className="version-label">Rendszerverzió {APP_VERSION}</p>
       </motion.section>
     </main>
   );

@@ -26,6 +26,7 @@ import {
 
 import { getProducts, getStock } from "../lib/api";
 import type { Session } from "../types";
+import { APP_VERSION } from "../version";
 import DocumentsPage from "./DocumentsPage";
 import EmailIntakePage from "./EmailIntakePage";
 import ProductDialog from "./ProductDialog";
@@ -38,6 +39,7 @@ import VrpImportsPage from "./VrpImportsPage";
 const InventoryPage = lazy(() => import("./InventoryPage"));
 const UploadQueuePage = lazy(() => import("./UploadQueuePage"));
 const IdentityPage = lazy(() => import("./IdentityPage"));
+const SettingsPage = lazy(() => import("./SettingsPage"));
 
 type Props = {
   session: Session;
@@ -55,7 +57,8 @@ type WorkspaceView =
   | "identity"
   | "vrp"
   | "email"
-  | "plugins";
+  | "plugins"
+  | "settings";
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
@@ -67,7 +70,9 @@ export default function Dashboard({
   const [activeView, setActiveView] = useState<WorkspaceView>(() => {
     if (session.mfa_setup_required) return "identity";
     const requested = new URLSearchParams(window.location.search).get("view");
-    return requested === "inventory" || requested === "uploads"
+    return requested === "inventory" ||
+      requested === "uploads" ||
+      requested === "settings"
       ? requested
       : "overview";
   });
@@ -126,7 +131,7 @@ export default function Dashboard({
           </div>
           <div>
             <strong>AI Raktár</strong>
-            <span>verzió 0.8.0</span>
+            <span>verzió {APP_VERSION}</span>
           </div>
         </div>
         <nav aria-label="Fő navigáció">
@@ -225,13 +230,16 @@ export default function Dashboard({
           </button>
         </nav>
         <div className="sidebar-footer">
-          <button
-            className="nav-item muted"
-            onClick={() => setActiveView("identity")}
-          >
-            <Settings aria-hidden="true" />
-            Beállítások
-          </button>
+          {!locked && (
+            <button
+              className={`nav-item ${activeView === "settings" ? "active" : ""}`}
+              onClick={() => setActiveView("settings")}
+              aria-current={activeView === "settings" ? "page" : undefined}
+            >
+              <Settings aria-hidden="true" />
+              Beállítások
+            </button>
+          )}
           <button className="profile-button" onClick={onLogout}>
             <span className="avatar">
               {session.user.full_name.slice(0, 2).toUpperCase()}
@@ -246,7 +254,14 @@ export default function Dashboard({
       </aside>
 
       <main className="workspace">
-        {activeView === "identity" ? (
+        {activeView === "settings" ? (
+          <Suspense fallback={<div className="empty-state">Beállítások betöltése…</div>}>
+            <SettingsPage
+              session={session}
+              onNavigate={(target) => setActiveView(target)}
+            />
+          </Suspense>
+        ) : activeView === "identity" ? (
           <Suspense fallback={<div className="empty-state">Identity betöltése…</div>}>
             <IdentityPage
               session={session}
@@ -614,6 +629,15 @@ export default function Dashboard({
           <UserCog aria-hidden="true" />
           Biztonság
         </button>
+        {!locked && (
+          <button
+            className={activeView === "settings" ? "accent" : ""}
+            onClick={() => setActiveView("settings")}
+          >
+            <Settings aria-hidden="true" />
+            Beállítás
+          </button>
+        )}
       </nav>
 
       <ProductDialog open={productDialog} onOpenChange={setProductDialog} />
