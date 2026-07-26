@@ -250,6 +250,8 @@ export default function ProductReceivingDialog({
     useState<DocumentItem | null>(null);
   const [match, setMatch] = useState<ProductMatch | null>(null);
   const [barcodeMessage, setBarcodeMessage] = useState("");
+  const [barcodeMessageTone, setBarcodeMessageTone] =
+    useState<"success" | "error">("error");
   const canReadDocuments = permissions.includes("documents.read");
   const allowDeliveryNote =
     permissions.includes("documents.upload") &&
@@ -330,6 +332,7 @@ export default function ProductReceivingDialog({
       setMatch(resolved);
     },
     onError: (error) => {
+      setBarcodeMessageTone("error");
       setBarcodeMessage(error.message || "A vonalkód nem található.");
     }
   });
@@ -367,6 +370,7 @@ export default function ProductReceivingDialog({
       setUploadedDocument(null);
       setMatch(null);
       setBarcodeMessage("");
+      setBarcodeMessageTone("error");
       uploadMutation.reset();
       lookupMutation.reset();
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -581,9 +585,11 @@ export default function ProductReceivingDialog({
                 <p className="scanner-message">Termék keresése…</p>
               ) : null}
               {barcodeMessage ? (
-                <p className="scanner-message error">{barcodeMessage}</p>
+                <p className={`scanner-message ${barcodeMessageTone}`}>
+                  {barcodeMessage}
+                </p>
               ) : null}
-              {barcodeMessage ? (
+              {barcodeMessage && barcodeMessageTone === "error" ? (
                 <button
                   className="secondary-button"
                   type="button"
@@ -607,6 +613,7 @@ export default function ProductReceivingDialog({
           onClose={() => setMatch(null)}
           onConfirmed={(product, addition) => {
             setMatch(null);
+            setBarcodeMessageTone("success");
             setBarcodeMessage(
               `${product.name}: ${formatter.format(addition)} hozzáadva a készlethez.`
             );
