@@ -40,6 +40,10 @@ const UploadQueuePage = lazy(() => import("./UploadQueuePage"));
 const IdentityPage = lazy(() => import("./IdentityPage"));
 const SettingsPage = lazy(() => import("./SettingsPage"));
 const ProductDialog = lazy(() => import("./ProductDialog"));
+const ProductReceivingDialog = lazy(
+  () => import("./ProductReceivingDialog")
+);
+const ProductsPage = lazy(() => import("./ProductsPage"));
 const StockDialog = lazy(() => import("./StockDialog"));
 
 type Props = {
@@ -50,6 +54,7 @@ type Props = {
 
 type WorkspaceView =
   | "overview"
+  | "products"
   | "documents"
   | "reviews"
   | "receipt"
@@ -61,6 +66,8 @@ type WorkspaceView =
   | "plugins"
   | "settings";
 
+type ReceiveMode = "delivery_note" | "barcode";
+
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
 
 export default function Dashboard({
@@ -71,7 +78,8 @@ export default function Dashboard({
   const [activeView, setActiveView] = useState<WorkspaceView>(() => {
     if (session.mfa_setup_required) return "identity";
     const requested = new URLSearchParams(window.location.search).get("view");
-    return requested === "inventory" ||
+    return requested === "products" ||
+      requested === "inventory" ||
       requested === "uploads" ||
       requested === "settings"
       ? requested
@@ -85,6 +93,8 @@ export default function Dashboard({
     "documents"
   );
   const [stockMode, setStockMode] = useState<"receive" | "correct" | null>(null);
+  const [receivingDialogMode, setReceivingDialogMode] =
+    useState<ReceiveMode | null>(null);
 
   const permissions = session.user.permissions ?? [];
   const can = (permission: string) => permissions.includes(permission);
@@ -97,7 +107,8 @@ export default function Dashboard({
   const stockQuery = useQuery({
     queryKey: ["stock"],
     queryFn: getStock,
-    enabled: !locked && can("stock.read")
+    enabled: !locked && can("stock.read"),
+    refetchInterval: activeView === "products" ? 5000 : false
   });
   const products = useMemo(
     () => productsQuery.data ?? [],
@@ -173,7 +184,10 @@ export default function Dashboard({
             </button>
           )}
           {!locked && can("products.read") && (
-            <button className="nav-item" onClick={() => setActiveView("overview")}>
+            <button
+              className={`nav-item ${activeView === "products" ? "active" : ""}`}
+              onClick={() => setActiveView("products")}
+            >
               <Barcode aria-hidden="true" />
               Termékek
             </button>
@@ -353,6 +367,18 @@ export default function Dashboard({
           </Suspense>
         ) : activeView === "plugins" ? (
           <PluginsPage role={session.user.role} />
+        ) : activeView === "products" ? (
+          <Suspense fallback={<div className="empty-state">Termékek betöltése…</div>}>
+            <ProductsPage
+              products={products}
+              stock={stock}
+              loading={loading}
+              failed={failed}
+              permissions={permissions}
+              onNewProduct={() => setProductDialog(true)}
+              onReceive={(mode) => setReceivingDialogMode(mode)}
+            />
+          </Suspense>
         ) : (
           <>
             <header className="workspace-header">
@@ -633,8 +659,11 @@ export default function Dashboard({
             VRP
           </button>
         )}
-        {!locked && can("products.write") && (
-          <button onClick={() => setProductDialog(true)}>
+        {!locked && can("products.read") && (
+          <button
+            className={activeView === "products" ? "accent" : ""}
+            onClick={() => setActiveView("products")}
+          >
             <PackagePlus aria-hidden="true" />
             Termék
           </button>
@@ -677,6 +706,17 @@ export default function Dashboard({
             products={products}
             open
             onOpenChange={(open) => !open && setStockMode(null)}
+          />
+        ) : null}
+        {receivingDialogMode ? (
+          <ProductReceivingDialog
+            key={receivingDialogMode}
+            open
+            initialMode={receivingDialogMode}
+            products={products}
+            stock={stock}
+            permissions={permissions}
+            onOpenChange={(open) => !open && setReceivingDialogMode(null)}
           />
         ) : null}
       </Suspense>

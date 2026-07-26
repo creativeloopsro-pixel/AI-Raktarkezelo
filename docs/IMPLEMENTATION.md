@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.10.0 hatókör
+## 0.11.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -25,6 +25,9 @@ feltételes, idempotens készletkönyveléssel bővült.
 A terméktörzs elsődleges EAN-mezője kamerás beolvasást, ellenőrzőszám-validációt
 és azonnali, szkennelhető SVG-előnézetet kapott; a készletlistában minden termék
 numerikus és vizuális elsődleges EAN-ja megjelenik.
+Az önálló Termékek munkafelület közvetlen újtermék- és készlet-hozzáadást,
+vonalkód alapján megjelenő mennyiség-megerősítést, valamint PDF-ből vagy
+mobilkamerás szállítólevél-fotóból indítható automatikus AI-bevételezést biztosít.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -34,6 +37,8 @@ numerikus és vizuális elsődleges EAN-ja megjelenik.
 | Sessions | Forgó refresh token, token-család újrahasználatának felismerése, eszközlista és visszavonás |
 | API token | Egyszer megjelenített titok, hash-elt tárolás, felhasználói engedélyekre szűkített scope és visszavonás |
 | Catalog | Termék, csomagolási egység, EAN/QR hozzárendelés |
+| Termékek PWA | Kereshető termékkatalógus, vizuális és numerikus EAN, közvetlen termék- és készlet-hozzáadás |
+| Segített bevételezés | Vonalkódos termékazonosítás aktuális/hozzáadott/eredmény készlettel, valamint fotózható szállítólevél AI-feldolgozással |
 | Inventory | Egyenleg, append-only mozgás, idempotencia, korrekció, visszavonás |
 | Audit | Érzékeny műveletek append-only naplója correlation ID-val |
 | Events | Tranzakcióban létrehozott outbox esemény |
@@ -91,5 +96,5 @@ numerikus és vizuális elsődleges EAN-ja megjelenik.
 
 ## Következő tervezett kiadás
 
-`0.10.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
+`0.12.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
 rendszerállapot-értesítések.

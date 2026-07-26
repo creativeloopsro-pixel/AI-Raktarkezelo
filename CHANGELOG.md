@@ -4,6 +4,29 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.11.0] - 2026-07-26
+
+### Hozzáadva
+
+- Önálló, kereshető **Termékek** munkafelület termék-, készlet-, minimum- és
+  EAN-áttekintéssel, közvetlen **Új termék**, **Készlet hozzáadása** és
+  **Szállítólevélről** műveletekkel.
+- Kamera-, Bluetooth-olvasó- és kézi EAN-alapú készlet-hozzáadás. Találat után
+  külön megerősítő ablak mutatja a jelenlegi, a hozzáadandó és az eredményként
+  létrejövő készletet.
+- A csomagolási egységhez rendelt vonalkód mennyisége automatikusan
+  alapegységre váltódik a bevételezés előtt.
+- PDF- vagy képfájlként feltölthető, telefonról közvetlenül fotózható
+  szállítólevél, automatikusan kért AI-feldolgozással és készletkönyveléssel.
+- Folyamatállapot a szállítólevél-felismeréshez; a legalább 98%-os, pontos
+  termékegyezések automatikusan készletre kerülnek, a bizonytalan tételek
+  ellenőrzési sorba jutnak.
+
+### Módosítva
+
+- A dokumentumfeltöltési kliens már külön továbbítja az automatikus feldolgozás
+  és automatikus jóváhagyás kérését a backendnek.
+
 ## [0.10.0] - 2026-07-26
 
 ### Hozzáadva

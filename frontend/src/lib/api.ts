@@ -308,10 +308,21 @@ export function getDocuments(): Promise<DocumentItem[]> {
   return request<DocumentItem[]>("/documents");
 }
 
-export function uploadDocument(file: File, documentType = "goods_receipt"): Promise<DocumentItem> {
+type DocumentUploadOptions = {
+  autoProcess?: boolean;
+  autoConfirm?: boolean;
+};
+
+export function uploadDocument(
+  file: File,
+  documentType = "goods_receipt",
+  options: DocumentUploadOptions = {}
+): Promise<DocumentItem> {
   const form = new FormData();
   form.set("file", file);
   form.set("document_type", documentType);
+  form.set("auto_process", String(options.autoProcess ?? false));
+  form.set("auto_confirm", String(options.autoConfirm ?? false));
   return request<DocumentItem>("/documents", {
     method: "POST",
     body: form
