@@ -1,9 +1,16 @@
 import { FormEvent, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Barcode, PackagePlus, X } from "lucide-react";
+import { Barcode, Camera, PackagePlus, X } from "lucide-react";
 
 import { createProduct } from "../lib/api";
+import {
+  getEanFormat,
+  getEanValidationMessage,
+  normalizeEan
+} from "../lib/ean";
+import BarcodeScanner from "./BarcodeScanner";
+import EanBarcode from "./EanBarcode";
 
 type Props = {
   open: boolean;
@@ -16,6 +23,10 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
   const [sku, setSku] = useState("");
   const [barcode, setBarcode] = useState("");
   const [minStock, setMinStock] = useState("0");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerMessage, setScannerMessage] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const eanError = getEanValidationMessage(barcode);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -29,7 +40,7 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
           ? [
               {
                 code: barcode,
-                symbology: "EAN_13",
+                symbology: getEanFormat(barcode) ?? "EAN_13",
                 is_primary: true,
                 packaging_unit_name: null
               }
@@ -45,13 +56,30 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
       setSku("");
       setBarcode("");
       setMinStock("0");
+      setScannerOpen(false);
+      setScannerMessage(null);
+      setSubmitted(false);
       onOpenChange(false);
     }
   });
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    setSubmitted(true);
+    if (eanError) return;
     mutation.mutate();
+  }
+
+  function handleDetected(code: string) {
+    const normalized = normalizeEan(code);
+    const issue = getEanValidationMessage(normalized);
+    if (issue) {
+      setScannerMessage(`A beolvasott kód nem használható EAN-ként. ${issue}`);
+      return;
+    }
+    setBarcode(normalized);
+    setScannerMessage(`EAN-kód beolvasva: ${normalized}`);
+    setScannerOpen(false);
   }
 
   return (
@@ -95,24 +123,94 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
                 />
               </label>
             </div>
-            <label>
-              <span className="label-with-icon">
-                <Barcode aria-hidden="true" />
-                Elsődleges EAN-kód
-              </span>
-              <input
-                inputMode="numeric"
-                value={barcode}
-                onChange={(event) => setBarcode(event.target.value)}
-                placeholder="Opcionális"
-              />
-            </label>
+            <div className="ean-entry-layout">
+              <div className="ean-entry-control">
+                <label htmlFor="primary-ean">
+                  <span className="label-with-icon">
+                    <Barcode aria-hidden="true" />
+                    Elsődleges EAN-kód
+                  </span>
+                </label>
+                <div className="ean-input-shell">
+                  <input
+                    id="primary-ean"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={barcode}
+                    onChange={(event) => {
+                      setBarcode(normalizeEan(event.target.value));
+                      setScannerMessage(null);
+                    }}
+                    placeholder="8 vagy 13 számjegy"
+                    aria-invalid={submitted && Boolean(eanError)}
+                    aria-describedby={
+                      submitted && eanError ? "primary-ean-error" : undefined
+                    }
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={`ean-camera-button ${scannerOpen ? "active" : ""}`}
+                    onClick={() => {
+                      setScannerOpen((current) => !current);
+                      setScannerMessage(null);
+                    }}
+                    aria-label={
+                      scannerOpen
+                        ? "EAN-kód kamera bezárása"
+                        : "EAN-kód beolvasása kamerával"
+                    }
+                    title="EAN-kód beolvasása kamerával"
+                  >
+                    <Camera aria-hidden="true" />
+                  </button>
+                </div>
+                {submitted && eanError ? (
+                  <p id="primary-ean-error" className="field-error">
+                    {eanError}
+                  </p>
+                ) : (
+                  <small className="field-hint">
+                    A kamera ikon beolvassa és automatikusan beírja a kódot.
+                  </small>
+                )}
+              </div>
+              <div className="ean-entry-preview" aria-live="polite">
+                {barcode && !eanError ? (
+                  <EanBarcode code={barcode} />
+                ) : (
+                  <span className="ean-preview-placeholder">
+                    <Barcode aria-hidden="true" />
+                    {barcode
+                      ? "A helyes EAN előnézete itt jelenik meg."
+                      : "Vizuális EAN-előnézet"}
+                  </span>
+                )}
+              </div>
+            </div>
+            {scannerOpen ? (
+              <section
+                className="product-ean-scanner"
+                aria-label="Elsődleges EAN-kód beolvasása"
+              >
+                <BarcodeScanner onDetected={handleDetected} />
+              </section>
+            ) : null}
+            {scannerMessage ? (
+              <p className="scanner-message" role="status">
+                {scannerMessage}
+              </p>
+            ) : null}
             {mutation.error && <p className="form-error">{mutation.error.message}</p>}
             <div className="dialog-actions">
               <Dialog.Close className="secondary-button" type="button">
                 Mégse
               </Dialog.Close>
-              <button className="primary-button" type="submit" disabled={mutation.isPending}>
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={mutation.isPending}
+              >
                 {mutation.isPending ? "Mentés…" : "Termék létrehozása"}
               </button>
             </div>
@@ -122,4 +220,3 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
     </Dialog.Root>
   );
 }
-

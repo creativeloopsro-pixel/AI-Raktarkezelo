@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.9.0 hatókör
+## 0.10.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -22,6 +22,9 @@ modulbeállításokhoz vezet.
 Az áruátvétel mobilkamerás vonalkódolvasással, a folytatható
 bizonylatfeltöltés pedig kérhető automatikus AI-feldolgozással és szigorúan
 feltételes, idempotens készletkönyveléssel bővült.
+A terméktörzs elsődleges EAN-mezője kamerás beolvasást, ellenőrzőszám-validációt
+és azonnali, szkennelhető SVG-előnézetet kapott; a készletlistában minden termék
+numerikus és vizuális elsődleges EAN-ja megjelenik.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |

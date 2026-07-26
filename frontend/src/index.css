@@ -656,6 +656,7 @@ button:disabled {
   border-top: 1px solid var(--line);
   padding: 1rem 0.9rem;
   font-size: 0.82rem;
+  vertical-align: middle;
 }
 
 .stock-table tbody tr {
@@ -677,6 +678,15 @@ button:disabled {
 
 .muted-text {
   color: var(--muted);
+}
+
+.product-identity-cell {
+  min-width: 11rem;
+}
+
+.product-identity-cell > strong {
+  display: block;
+  margin-bottom: 0.55rem;
 }
 
 .status-dot {
@@ -826,6 +836,184 @@ button:disabled {
 
 .label-with-icon svg {
   width: 0.9rem;
+}
+
+.ean-entry-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12rem;
+  gap: 0.9rem;
+  align-items: stretch;
+}
+
+.ean-entry-control {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.ean-input-shell {
+  position: relative;
+}
+
+.dialog-form .ean-input-shell input {
+  padding-right: 3.4rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+}
+
+.ean-camera-button {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 0;
+  border-radius: 0.45rem;
+  place-items: center;
+  color: white;
+  background: var(--navy);
+  transform: translateY(-50%);
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.ean-camera-button:hover,
+.ean-camera-button.active {
+  color: var(--navy);
+  background: var(--accent);
+}
+
+.ean-camera-button:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.ean-camera-button svg {
+  width: 1rem;
+}
+
+.field-hint,
+.field-error {
+  margin: 0;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.field-hint {
+  color: var(--muted);
+}
+
+.field-error {
+  color: var(--danger);
+}
+
+.ean-entry-preview {
+  display: grid;
+  min-height: 6.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  padding: 0.5rem;
+  place-items: center;
+  background: var(--surface);
+}
+
+.ean-preview-placeholder,
+.ean-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.ean-preview-placeholder {
+  max-width: 9rem;
+  flex-direction: column;
+  text-align: center;
+}
+
+.ean-preview-placeholder svg,
+.ean-empty svg {
+  width: 1rem;
+}
+
+.ean-barcode {
+  width: 100%;
+  margin: 0;
+}
+
+.ean-barcode svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ean-svg-number {
+  fill: #071521;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 7px;
+}
+
+.ean-barcode figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+}
+
+.ean-barcode figcaption code {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+}
+
+.ean-barcode figcaption small {
+  color: var(--danger);
+  font-size: 0.52rem;
+}
+
+.ean-barcode.compact {
+  width: 9rem;
+}
+
+.ean-barcode.compact figcaption {
+  margin-top: 0.1rem;
+}
+
+.ean-barcode.invalid svg {
+  opacity: 0.68;
+}
+
+.ean-empty.compact {
+  font-size: 0.62rem;
+}
+
+.product-ean-scanner {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: var(--surface);
+}
+
+.product-ean-scanner .scanner-viewport,
+.product-ean-scanner .scanner-viewport video {
+  min-height: 12rem;
 }
 
 .quantity-input {
@@ -3661,6 +3849,25 @@ button:disabled {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ean-entry-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ean-entry-preview {
+    width: min(12rem, 100%);
+    min-height: 6rem;
+    justify-self: start;
+  }
+
+  .product-ean-scanner .scanner-viewport,
+  .product-ean-scanner .scanner-viewport video {
+    min-height: 11rem;
+  }
+
+  .ean-barcode.compact {
+    width: 7.6rem;
   }
 
   @keyframes sheet-in {

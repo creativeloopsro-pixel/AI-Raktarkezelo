@@ -28,18 +28,19 @@ import { getProducts, getStock } from "../lib/api";
 import type { Session } from "../types";
 import { APP_VERSION } from "../version";
 import DocumentsPage from "./DocumentsPage";
+import EanBarcode from "./EanBarcode";
 import EmailIntakePage from "./EmailIntakePage";
-import ProductDialog from "./ProductDialog";
 import PluginsPage from "./PluginsPage";
 import ReceiptReviewPage from "./ReceiptReviewPage";
 import ReviewTasksPage from "./ReviewTasksPage";
-import StockDialog from "./StockDialog";
 import VrpImportsPage from "./VrpImportsPage";
 
 const InventoryPage = lazy(() => import("./InventoryPage"));
 const UploadQueuePage = lazy(() => import("./UploadQueuePage"));
 const IdentityPage = lazy(() => import("./IdentityPage"));
 const SettingsPage = lazy(() => import("./SettingsPage"));
+const ProductDialog = lazy(() => import("./ProductDialog"));
+const StockDialog = lazy(() => import("./StockDialog"));
 
 type Props = {
   session: Session;
@@ -98,7 +99,10 @@ export default function Dashboard({
     queryFn: getStock,
     enabled: !locked && can("stock.read")
   });
-  const products = productsQuery.data ?? [];
+  const products = useMemo(
+    () => productsQuery.data ?? [],
+    [productsQuery.data]
+  );
   const stock = useMemo(() => stockQuery.data ?? [], [stockQuery.data]);
 
   const metrics = useMemo(() => {
@@ -110,12 +114,27 @@ export default function Dashboard({
     return { totalQuantity, lowStock, negativeStock };
   }, [stock]);
 
+  const primaryBarcodeByProductId = useMemo(
+    () =>
+      new Map(
+        products.map((product) => [
+          product.id,
+          product.barcodes.find((barcode) => barcode.is_primary)?.code ??
+            product.barcodes[0]?.code ??
+            null
+        ])
+      ),
+    [products]
+  );
+
   const filteredStock = stock.filter((item) => {
     const needle = search.trim().toLocaleLowerCase("hu");
+    const primaryBarcode = primaryBarcodeByProductId.get(item.product_id);
     return (
       !needle ||
       item.product_name.toLocaleLowerCase("hu").includes(needle) ||
-      item.internal_sku.toLocaleLowerCase("hu").includes(needle)
+      item.internal_sku.toLocaleLowerCase("hu").includes(needle) ||
+      primaryBarcode?.includes(needle)
     );
   });
 
@@ -504,8 +523,15 @@ export default function Dashboard({
                               delay: Math.min(index * 0.025, 0.25)
                             }}
                           >
-                            <td>
+                            <td className="product-identity-cell">
                               <strong>{item.product_name}</strong>
+                              <EanBarcode
+                                code={
+                                  primaryBarcodeByProductId.get(item.product_id) ??
+                                  null
+                                }
+                                compact
+                              />
                             </td>
                             <td className="muted-text">
                               {item.internal_sku}
@@ -640,14 +666,20 @@ export default function Dashboard({
         )}
       </nav>
 
-      <ProductDialog open={productDialog} onOpenChange={setProductDialog} />
-      <StockDialog
-        key={stockMode ?? "closed"}
-        mode={stockMode ?? "receive"}
-        products={products}
-        open={stockMode !== null}
-        onOpenChange={(open) => !open && setStockMode(null)}
-      />
+      <Suspense fallback={null}>
+        {productDialog ? (
+          <ProductDialog open onOpenChange={setProductDialog} />
+        ) : null}
+        {stockMode ? (
+          <StockDialog
+            key={stockMode}
+            mode={stockMode}
+            products={products}
+            open
+            onOpenChange={(open) => !open && setStockMode(null)}
+          />
+        ) : null}
+      </Suspense>
     </div>
   );
 }

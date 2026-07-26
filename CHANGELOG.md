@@ -4,6 +4,24 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.10.0] - 2026-07-26
+
+### Hozzáadva
+
+- Kis kameraikon az **Elsődleges EAN-kód** mezőben; a mobilkamerával vagy
+  Bluetooth-olvasóval érzékelt EAN automatikusan bekerül a mezőbe.
+- Szabványos EAN-13 és EAN-8 vonalszerkezetből felépített, szkennelhető SVG
+  előnézet a termék létrehozásakor.
+- Minden készletlistában szereplő termék mellett megjelenik az elsődleges EAN
+  vizuális vonalkódja és numerikus értéke.
+- EAN-hossz- és ellenőrzőszám-validáció az új termékek elsődleges kódjánál,
+  valamint EAN-alapú keresés a készletáttekintésben.
+
+### Teljesítmény
+
+- A termék- és készletműveleti dialógusok igény szerinti JavaScript-betöltést
+  kaptak, így az új funkciók mellett is csökkent a kezdő alkalmazáscsomag mérete.
+
 ## [0.9.1] - 2026-07-26
 
 ### Javítva

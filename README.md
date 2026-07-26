@@ -6,9 +6,10 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.9.1` - mobilkamerás vonalkódos bevételezés, bizonylatfotóból indítható
-magas biztonságú AI automatikus készletkönyvelés, részletes jogosultságkezelés,
-védett munkamenetek és folytatható offline fájlfeltöltés.
+`0.10.0` - kamerával kitölthető elsődleges EAN, minden terméknél vizuális és
+numerikus EAN-megjelenítés, mobilkamerás vonalkódos bevételezés, bizonylatfotóból
+indítható magas biztonságú AI automatikus készletkönyvelés, részletes
+jogosultságkezelés, védett munkamenetek és folytatható offline fájlfeltöltés.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
