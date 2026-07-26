@@ -115,11 +115,11 @@ export default function AiSettingsPanel({ canWrite }: Props) {
               <span className="ai-provider-icon">
                 <Sparkles aria-hidden="true" />
               </span>
-              <span>
-                <small>Szolgáltató</small>
-                <strong>Ollama Cloud</strong>
-                <em>{settings.base_url}</em>
-              </span>
+                <span>
+                  <small>Szolgáltató</small>
+                  <strong>Ollama</strong>
+                  <em>{settings.base_url}</em>
+                </span>
             </div>
             <div>
               <small>Modell</small>
@@ -131,14 +131,18 @@ export default function AiSettingsPanel({ canWrite }: Props) {
               <strong>
                 {settings.api_key_configured
                   ? settings.api_key_hint ?? "Környezeti kulcs"
-                  : "Nincs megadva"}
+                  : settings.provider_enabled
+                    ? "Nem szükséges"
+                    : "Nincs megadva"}
               </strong>
               <em>
                 {settings.api_key_source === "organization"
                   ? "Titkosított szervezeti beállítás"
                   : settings.api_key_source === "environment"
                     ? "Szerverkörnyezeti beállítás"
-                    : "Az AI jelenleg nem használható"}
+                    : settings.provider_enabled
+                      ? "Helyi vagy kulcs nélküli szolgáltató"
+                      : "Az AI jelenleg nem használható"}
               </em>
             </div>
           </div>
