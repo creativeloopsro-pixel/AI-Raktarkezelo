@@ -71,7 +71,13 @@ export default function ProductDialog({ open, onOpenChange }: Props) {
   }
 
   function handleDetected(code: string) {
-    const normalized = normalizeEan(code);
+    const normalized = code.trim();
+    if (!/^(?:\d{8}|\d{13})$/.test(normalized)) {
+      setScannerMessage(
+        "A beolvasott kód nem EAN-8 vagy EAN-13 formátumú."
+      );
+      return;
+    }
     const issue = getEanValidationMessage(normalized);
     if (issue) {
       setScannerMessage(`A beolvasott kód nem használható EAN-ként. ${issue}`);
