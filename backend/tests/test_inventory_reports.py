@@ -123,6 +123,11 @@ def test_generated_inventory_pdf_is_stored_as_completed_document(
     assert "Automatikus AI készletleltár" in text
     assert "Teszt termék" in text
     assert "5991234567890" in text
+    assert (
+        text.index("Teszt termék")
+        < text.index("5991234567890")
+        < text.index("TEST-001")
+    )
     assert "MINIMUM ALATT" in text
 
     session.expire_all()

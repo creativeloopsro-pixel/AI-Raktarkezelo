@@ -4,6 +4,16 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.14.1] - 2026-07-26
+
+### Módosítva
+
+- A generált készletleltár PDF tételtáblájában az **Elsődleges EAN** oszlop
+  közvetlenül a **Termék** oszlop után jelenik meg, ezért minden termék neve
+  mellett azonnal látható a hozzá tartozó numerikus EAN-kód.
+- Regressziós teszt védi a `Termék → Elsődleges EAN → Belső cikkszám`
+  oszlopsorrendet.
+
 ## [0.14.0] - 2026-07-26
 
 ### Hozzáadva

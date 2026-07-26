@@ -329,8 +329,8 @@ def render_inventory_report_pdf(snapshot: InventoryReportSnapshot) -> bytes:
 
     headers = [
         "Termék",
-        "Belső cikkszám",
         "Elsődleges EAN",
+        "Belső cikkszám",
         "Készlet",
         "Minimum",
         "Egység",
@@ -341,8 +341,8 @@ def render_inventory_report_pdf(snapshot: InventoryReportSnapshot) -> bytes:
         table_data.append(
             [
                 Paragraph(escape(row.name), table_body_style),
-                Paragraph(escape(row.internal_sku), table_body_style),
                 Paragraph(escape(row.ean or "Nincs megadva"), table_body_style),
+                Paragraph(escape(row.internal_sku), table_body_style),
                 Paragraph(_format_quantity(row.quantity), table_body_style),
                 Paragraph(_format_quantity(row.min_stock), table_body_style),
                 Paragraph(escape(row.base_unit), table_body_style),
@@ -352,7 +352,7 @@ def render_inventory_report_pdf(snapshot: InventoryReportSnapshot) -> bytes:
 
     inventory_table = LongTable(
         table_data,
-        colWidths=[68 * mm, 34 * mm, 40 * mm, 24 * mm, 24 * mm, 22 * mm, 28 * mm],
+        colWidths=[68 * mm, 40 * mm, 34 * mm, 24 * mm, 24 * mm, 22 * mm, 28 * mm],
         repeatRows=1,
     )
     table_commands = [
