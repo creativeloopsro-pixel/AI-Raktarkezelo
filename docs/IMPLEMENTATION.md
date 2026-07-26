@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.11.0 hatókör
+## 0.12.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -28,10 +28,15 @@ numerikus és vizuális elsődleges EAN-ja megjelenik.
 Az önálló Termékek munkafelület közvetlen újtermék- és készlet-hozzáadást,
 vonalkód alapján megjelenő mennyiség-megerősítést, valamint PDF-ből vagy
 mobilkamerás szállítólevél-fotóból indítható automatikus AI-bevételezést biztosít.
+A Beállítások oldalon az arra jogosult felhasználó szervezetenként külön Ollama
+API-kulcsot adhat meg, cserélhet vagy törölhet. A kulcs titkosítva tárolódik,
+soha nem olvasható vissza, és az AI-worker futás közben a feladathoz tartozó
+szervezet beállítását használja.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
 | Beállítási központ | Önálló, reszponzív, jogosultság alapján szűrt fiók-, biztonsági és modulnavigáció |
+| AI hitelesítő adat | Szervezetszintű, titkosított Ollama API-kulcs, maszkolt állapot, auditált csere és törlés |
 | Identity | Szervezethez kötött felhasználó, egyedi és rendszer-szerepkörök, finom engedélyek |
 | MFA | Adminisztrátori TOTP, egyszer használható helyreállító kódok és MFA-val védett munkamenet |
 | Sessions | Forgó refresh token, token-család újrahasználatának felismerése, eszközlista és visszavonás |
@@ -96,5 +101,5 @@ mobilkamerás szállítólevél-fotóból indítható automatikus AI-bevételez�
 
 ## Következő tervezett kiadás
 
-`0.12.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
+`0.13.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
 rendszerállapot-értesítések.

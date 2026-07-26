@@ -1,4 +1,5 @@
 import type {
+  AiSettings,
   ApiTokenItem,
   CreatedApiToken,
   DocumentItem,
@@ -521,6 +522,23 @@ export function updateVrpSchedule(
   return request<VrpSchedule>("/vrp/schedule", {
     method: "PUT",
     body: JSON.stringify(payload)
+  });
+}
+
+export function getAiSettings(): Promise<AiSettings> {
+  return request<AiSettings>("/ai/settings");
+}
+
+export function updateAiSettings(apiKey: string): Promise<AiSettings> {
+  return request<AiSettings>("/ai/settings", {
+    method: "PUT",
+    body: JSON.stringify({ api_key: apiKey })
+  });
+}
+
+export function clearAiSettings(): Promise<AiSettings> {
+  return request<AiSettings>("/ai/settings", {
+    method: "DELETE"
   });
 }
 

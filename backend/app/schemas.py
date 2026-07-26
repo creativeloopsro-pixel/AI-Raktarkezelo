@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class ApiModel(BaseModel):
@@ -660,6 +660,33 @@ class EmailInboundSettingsRead(ApiModel):
     updated_by: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class AiSettingsUpdate(BaseModel):
+    api_key: str = Field(min_length=8, max_length=2048)
+
+    @field_validator("api_key")
+    @classmethod
+    def normalize_api_key(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 8:
+            raise ValueError("Az API-kulcs legalább 8 karakter legyen.")
+        if any(character.isspace() for character in normalized):
+            raise ValueError("Az API-kulcs nem tartalmazhat szóközt.")
+        return normalized
+
+
+class AiSettingsRead(BaseModel):
+    organization_id: str
+    provider: str
+    base_url: str
+    model: str
+    api_key_configured: bool
+    api_key_source: Literal["organization", "environment", "none"]
+    api_key_hint: str | None
+    provider_enabled: bool
+    updated_by: str | None
+    updated_at: datetime | None
 
 
 class InboundEmailAttachmentRead(ApiModel):

@@ -698,6 +698,28 @@ class EmailInboundSettings(Base):
     )
 
 
+class OrganizationAiSettings(Base):
+    __tablename__ = "organization_ai_settings"
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True
+    )
+    provider: Mapped[str] = mapped_column(String(40), default="ollama")
+    api_key_encrypted: Mapped[str | None] = mapped_column(
+        String(4096), nullable=True
+    )
+    api_key_last_four: Mapped[str | None] = mapped_column(
+        String(4), nullable=True
+    )
+    updated_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
 class InboundEmail(Base):
     __tablename__ = "inbound_emails"
     __table_args__ = (

@@ -37,6 +37,7 @@ from app.models import (
     User,
     utc_now,
 )
+from app.services.ai_settings import AiSettingsService
 from app.services.goods_receipts import GoodsReceiptService
 from app.services.identity import effective_permissions
 
@@ -254,11 +255,12 @@ class DocumentAiPipeline:
     ):
         self.session = session
         self.settings = settings or get_settings()
-        self.provider = provider or get_ai_provider(self.settings)
+        self.provider = provider
         self.preprocessor = preprocessor or DocumentImagePreprocessor(settings=self.settings)
 
     def process(self, job_id: str) -> GoodsReceiptDraft | None:
-        claimed = self._claim(job_id)
+        provider = self.provider or self._provider_for_job(job_id)
+        claimed = self._claim(job_id, provider)
         if claimed is None:
             return None
         job, document, ai_request = claimed
@@ -272,7 +274,7 @@ class DocumentAiPipeline:
                 "schema": "GoodsReceiptExtraction",
             }
             self.session.commit()
-            response = self.provider.extract(images)
+            response = provider.extract(images)
             extraction = GoodsReceiptExtraction.model_validate_json(response.content)
         except ValidationError as exc:
             self._fail(
@@ -305,8 +307,23 @@ class DocumentAiPipeline:
 
         return self._complete(job, document, ai_request, extraction, response)
 
+    def _provider_for_job(self, job_id: str) -> AiProvider:
+        organization_id = self.session.scalar(
+            select(DocumentProcessingJob.organization_id).where(
+                DocumentProcessingJob.id == job_id
+            )
+        )
+        runtime_settings = (
+            AiSettingsService(
+                self.session, settings=self.settings
+            ).runtime_settings(organization_id)
+            if organization_id
+            else self.settings
+        )
+        return get_ai_provider(runtime_settings)
+
     def _claim(
-        self, job_id: str
+        self, job_id: str, provider: AiProvider
     ) -> tuple[DocumentProcessingJob, Document, AiRequest] | None:
         job = self.session.scalar(
             select(DocumentProcessingJob)
@@ -342,8 +359,8 @@ class DocumentAiPipeline:
             organization_id=job.organization_id,
             job_id=job.id,
             document_id=document.id,
-            provider=self.provider.name,
-            model_name=self.provider.model,
+            provider=provider.name,
+            model_name=provider.model,
             prompt_version=self.settings.ai_prompt_version,
             status="RUNNING",
         )

@@ -6,11 +6,11 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.11.0` - önálló termékkatalógus, közvetlen készlet-hozzáadás, vonalkódos
-termékazonosítás készletváltozás-előnézettel, valamint fotózható szállítólevélből
-indítható magas biztonságú AI automatikus készletkönyvelés. A kiadás emellett
-tartalmazza a kamerával kitölthető elsődleges EAN-t és minden terméknél a vizuális
-és numerikus EAN-megjelenítést.
+`0.12.0` - a Beállítások oldalon szervezetenként megadható, cserélhető és
+eltávolítható Ollama AI API-kulcs, titkosított tárolással és maszkolt
+visszajelzéssel. A dokumentumfeldolgozó worker automatikusan az adott szervezet
+kulcsát használja. A kiadás tartalmazza továbbá az önálló termékkatalógust,
+a vonalkódos készlet-hozzáadást és a szállítólevélből indítható AI-bevételezést.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

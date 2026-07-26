@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api import (
+    ai_settings,
     auth,
     documents,
     email_intake,
@@ -19,6 +20,7 @@ from app.api import (
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(system.router)
 api_router.include_router(auth.router)
+api_router.include_router(ai_settings.router)
 api_router.include_router(identity.router)
 api_router.include_router(products.router)
 api_router.include_router(stock.router)

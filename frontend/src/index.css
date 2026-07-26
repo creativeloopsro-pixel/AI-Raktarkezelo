@@ -6266,6 +6266,270 @@ button:disabled {
   width: 1rem;
 }
 
+.ai-settings-section {
+  border-top: 1px solid var(--line);
+  padding: 2.5rem 0;
+}
+
+.ai-settings-heading {
+  align-items: flex-end;
+}
+
+.ai-connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--accent-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.ai-connection-status.configured {
+  color: var(--success);
+}
+
+.ai-connection-status svg {
+  width: 1rem;
+}
+
+.ai-settings-loading {
+  display: flex;
+  min-height: 7rem;
+  margin-top: 1.35rem;
+  border-block: 1px solid var(--line);
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.ai-settings-panel {
+  margin-top: 1.35rem;
+  border-block: 1px solid var(--line);
+}
+
+.ai-provider-summary {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+}
+
+.ai-provider-summary > div {
+  display: grid;
+  min-width: 0;
+  min-height: 7.6rem;
+  align-content: center;
+  padding: 1.1rem 1.25rem;
+}
+
+.ai-provider-summary > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.ai-provider-summary small,
+.ai-provider-summary strong,
+.ai-provider-summary em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-provider-summary small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-provider-summary strong {
+  margin-top: 0.35rem;
+  font-size: 0.87rem;
+}
+
+.ai-provider-summary em {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-style: normal;
+}
+
+.ai-provider-summary .ai-provider-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.ai-provider-icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--accent-dark);
+  background: var(--sand);
+}
+
+.ai-provider-icon svg {
+  width: 1.3rem;
+}
+
+.ai-key-form {
+  display: grid;
+  border-top: 1px solid var(--line);
+  grid-template-columns: minmax(13rem, 0.7fr) minmax(18rem, 1.3fr);
+  gap: 1rem 2rem;
+  padding: 1.35rem 1.25rem;
+  background: rgb(255 255 255 / 32%);
+}
+
+.ai-key-form-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-top: 0.3rem;
+}
+
+.ai-key-form-copy > svg {
+  width: 1.2rem;
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
+.ai-key-form-copy strong,
+.ai-key-form-copy small {
+  display: block;
+}
+
+.ai-key-form-copy strong {
+  font-size: 0.78rem;
+}
+
+.ai-key-form-copy small {
+  margin-top: 0.28rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+.ai-key-field {
+  display: grid;
+  gap: 0.42rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+}
+
+.ai-key-field > small {
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.ai-key-input-shell {
+  position: relative;
+  display: block;
+}
+
+.ai-key-input-shell input {
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  outline: 0;
+  padding: 0 3rem 0 0.8rem;
+  color: var(--ink);
+  background: var(--surface);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.ai-key-input-shell input:focus {
+  border-color: var(--accent-dark);
+  box-shadow: 0 0 0 3px rgb(197 125 8 / 12%);
+}
+
+.ai-key-input-shell > button {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  border-radius: 0.45rem;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  transform: translateY(-50%);
+}
+
+.ai-key-input-shell > button:hover {
+  color: var(--ink);
+  background: var(--sand);
+}
+
+.ai-key-input-shell svg {
+  width: 1rem;
+}
+
+.ai-key-feedback {
+  display: flex;
+  margin: 0;
+  grid-column: 2;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.ai-key-feedback svg {
+  width: 1rem;
+}
+
+.ai-key-feedback.success {
+  color: var(--success);
+}
+
+.ai-key-feedback.error {
+  color: var(--danger);
+}
+
+.ai-key-feedback.warning {
+  color: var(--accent-dark);
+}
+
+.ai-key-actions {
+  display: flex;
+  grid-column: 2;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.ai-key-actions .danger-button.confirming {
+  border-color: var(--danger);
+  color: white;
+  background: var(--danger);
+}
+
+.ai-settings-readonly {
+  display: flex;
+  border-top: 1px solid var(--line);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.25rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.ai-settings-readonly svg {
+  width: 1.1rem;
+}
+
 .settings-runtime {
   display: flex;
   border-top: 1px solid var(--line);
@@ -6308,6 +6572,25 @@ button:disabled {
   .settings-status-strip > div:nth-child(4) {
     border-top: 1px solid var(--line);
   }
+
+  .ai-provider-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ai-provider-summary > div:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    grid-column: 1 / -1;
+  }
+
+  .ai-key-form {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-key-feedback,
+  .ai-key-actions {
+    grid-column: 1;
+  }
 }
 
 @media (max-width: 720px) {
@@ -6346,6 +6629,43 @@ button:disabled {
 
   .settings-access-note {
     margin-top: 0.8rem;
+  }
+
+  .ai-settings-heading {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .ai-connection-status {
+    width: fit-content;
+  }
+
+  .ai-provider-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-provider-summary > div {
+    min-height: 6.5rem;
+  }
+
+  .ai-provider-summary > div + div,
+  .ai-provider-summary > div:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    grid-column: auto;
+  }
+
+  .ai-key-form {
+    padding: 1rem 0.85rem;
+  }
+
+  .ai-key-actions {
+    display: grid;
+  }
+
+  .ai-key-actions .secondary-button,
+  .ai-key-actions .primary-button {
+    width: 100%;
   }
 }
 

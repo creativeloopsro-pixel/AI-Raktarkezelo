@@ -15,6 +15,7 @@ import {
 
 import type { Session } from "../types";
 import { APP_VERSION } from "../version";
+import AiSettingsPanel from "./AiSettingsPanel";
 
 export type SettingsTarget =
   | "identity"
@@ -202,6 +203,10 @@ export default function SettingsPage({ session, onNavigate }: Props) {
           })}
         </div>
       </section>
+
+      {can("settings.read") ? (
+        <AiSettingsPanel canWrite={can("settings.write")} />
+      ) : null}
 
       <section className="settings-runtime">
         <SlidersHorizontal aria-hidden="true" />

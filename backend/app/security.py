@@ -108,14 +108,22 @@ def generate_mfa_secret() -> str:
     return base64.b32encode(token_bytes(20)).decode("ascii").rstrip("=")
 
 
-def encrypt_mfa_secret(secret: str, settings: Settings) -> str:
+def encrypt_secret(secret: str, settings: Settings) -> str:
     key = base64.urlsafe_b64encode(sha256(settings.secret_key.encode("utf-8")).digest())
-    return Fernet(key).encrypt(secret.encode("ascii")).decode("ascii")
+    return Fernet(key).encrypt(secret.encode("utf-8")).decode("ascii")
+
+
+def decrypt_secret(encrypted: str, settings: Settings) -> str:
+    key = base64.urlsafe_b64encode(sha256(settings.secret_key.encode("utf-8")).digest())
+    return Fernet(key).decrypt(encrypted.encode("ascii")).decode("utf-8")
+
+
+def encrypt_mfa_secret(secret: str, settings: Settings) -> str:
+    return encrypt_secret(secret, settings)
 
 
 def decrypt_mfa_secret(encrypted: str, settings: Settings) -> str:
-    key = base64.urlsafe_b64encode(sha256(settings.secret_key.encode("utf-8")).digest())
-    return Fernet(key).decrypt(encrypted.encode("ascii")).decode("ascii")
+    return decrypt_secret(encrypted, settings)
 
 
 def create_totp_uri(

@@ -4,6 +4,27 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.12.0] - 2026-07-26
+
+### Hozzáadva
+
+- Új **AI-kapcsolat** rész a Beállítások oldalon az Ollama API-kulcs
+  megadásához, cseréjéhez és eltávolításához.
+- Jogosultságtudatos `GET`, `PUT` és `DELETE /api/v1/ai/settings` végpontok
+  szervezetszintű AI-hitelesítő adatok kezeléséhez.
+- A dokumentumfeldolgozó worker feladatonként az adott szervezet AI-kulcsát
+  használja, és szervezeti kulcs mentésekor automatikusan aktiválja az
+  Ollama-szolgáltatót.
+
+### Biztonság
+
+- Az API-kulcs Fernet-titkosítással kerül az adatbázisba; a nyers érték sem
+  válaszban, sem auditnaplóban, sem outbox-eseményben nem jelenik meg.
+- A felület csak a kulcs maszkolt utolsó négy karakterét mutatja, és a mentett
+  kulcsot soha nem tölti vissza a böngészőbe.
+- Megtekintéshez `settings.read`, módosításhoz `settings.write` engedély
+  szükséges; minden csere és törlés auditált.
+
 ## [0.11.0] - 2026-07-26
 
 ### Hozzáadva

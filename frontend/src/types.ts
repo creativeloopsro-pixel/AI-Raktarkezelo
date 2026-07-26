@@ -577,3 +577,16 @@ export type PluginOverview = {
   plugins: PluginItem[];
   job_counts: Record<string, number>;
 };
+
+export type AiSettings = {
+  organization_id: string;
+  provider: string;
+  base_url: string;
+  model: string;
+  api_key_configured: boolean;
+  api_key_source: "organization" | "environment" | "none";
+  api_key_hint: string | null;
+  provider_enabled: boolean;
+  updated_by: string | null;
+  updated_at: string | null;
+};
