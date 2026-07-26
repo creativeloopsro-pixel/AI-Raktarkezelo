@@ -8,6 +8,8 @@ import type {
   GoodsReceiptDraft,
   InboundEmail,
   InventoryCountPayload,
+  InventoryReportSchedule,
+  InventoryReportScheduleUpdate,
   InventorySession,
   IdentityRole,
   IdentityUser,
@@ -532,6 +534,25 @@ export function updateVrpSchedule(
   return request<VrpSchedule>("/vrp/schedule", {
     method: "PUT",
     body: JSON.stringify(payload)
+  });
+}
+
+export function getInventoryReportSchedule(): Promise<InventoryReportSchedule> {
+  return request<InventoryReportSchedule>("/reports/inventory/schedule");
+}
+
+export function updateInventoryReportSchedule(
+  payload: InventoryReportScheduleUpdate
+): Promise<InventoryReportSchedule> {
+  return request<InventoryReportSchedule>("/reports/inventory/schedule", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function generateInventoryReport(): Promise<DocumentItem> {
+  return request<DocumentItem>("/reports/inventory/generate", {
+    method: "POST"
   });
 }
 

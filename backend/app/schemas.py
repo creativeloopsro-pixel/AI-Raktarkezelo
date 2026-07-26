@@ -647,6 +647,43 @@ class VrpScheduleRead(ApiModel):
     updated_at: datetime
 
 
+class InventoryReportScheduleUpdate(BaseModel):
+    enabled: bool = False
+    frequency: Literal["DAILY", "WEEKLY", "MONTHLY"] = "WEEKLY"
+    generation_time: time
+    timezone: str = Field(min_length=1, max_length=80)
+    weekly_day: Literal[
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY",
+        "SUNDAY",
+    ] = "MONDAY"
+    monthly_rule: str = Field(
+        default="LAST_DAY",
+        pattern=r"^(LAST_DAY|[1-9]|1\d|2[0-8])$",
+    )
+
+
+class InventoryReportScheduleRead(ApiModel):
+    organization_id: str
+    enabled: bool
+    frequency: str
+    generation_time: time
+    timezone: str
+    weekly_day: str
+    monthly_rule: str
+    next_run_at: datetime | None
+    last_run_at: datetime | None
+    last_document_id: str | None
+    last_error_message: str | None
+    updated_by: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
 class EmailInboundSettingsUpdate(BaseModel):
     enabled: bool = True
     auto_process: bool = True

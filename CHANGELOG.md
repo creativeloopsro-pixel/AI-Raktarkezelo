@@ -4,6 +4,36 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.14.0] - 2026-07-26
+
+### Hozzáadva
+
+- Szervezetenként beállítható automatikus AI-készletleltár napi, heti vagy havi
+  gyakorisággal, időzónával, futási időponttal és heti/havi részletszabállyal.
+- Újrafuttatható, tartós riportfeladatok stale-worker helyreállítással és
+  legfeljebb három automatikus próbálkozással.
+- Magyar ékezeteket támogató, többoldalas készlet-PDF összesítő mutatókkal,
+  automatikus eltérés-ellenőrzéssel és tételes termék-, SKU-, EAN-,
+  készlet- valamint minimumadatokkal.
+- Kézi **PDF készítése most** művelet a Beállításokban az ütemezés azonnali
+  ellenőrzéséhez.
+
+### Módosítva
+
+- A generált leltárak `SYSTEM_GENERATED` forrású, kész dokumentumként kerülnek a
+  közös Dokumentumok tárba, ahol jól látható típussal és közvetlen
+  **PDF letöltése** művelettel jelennek meg.
+- A Beállítások konfigurációs kártyái között közvetlenül elérhető az
+  AI-leltár ütemezése; a mélyhivatkozás a `/settings/reports` útvonal.
+
+### Biztonság és megbízhatóság
+
+- Az ütemezés olvasását `settings.read` és `reports.read`, módosítását
+  `settings.write` és `reports.generate`, a kézi generálást `reports.generate`
+  jogosultság védi.
+- A PDF-ek a meglévő tenant-határolt objektumtárba, auditnaplóval és
+  SHA-256 integritásazonosítóval kerülnek.
+
 ## [0.13.0] - 2026-07-26
 
 ### Hozzáadva

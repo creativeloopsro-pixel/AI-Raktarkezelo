@@ -1249,6 +1249,77 @@ class VrpImportSchedule(Base):
     )
 
 
+class InventoryReportSchedule(Base):
+    __tablename__ = "inventory_report_schedules"
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    frequency: Mapped[str] = mapped_column(String(20), default="WEEKLY")
+    generation_time: Mapped[time] = mapped_column(Time, default=time(6, 0))
+    timezone: Mapped[str] = mapped_column(String(80), default="Europe/Bratislava")
+    weekly_day: Mapped[str] = mapped_column(String(16), default="MONDAY")
+    monthly_rule: Mapped[str] = mapped_column(String(16), default="LAST_DAY")
+    next_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_document_id: Mapped[str | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
+    last_error_message: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
+    updated_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class InventoryReportRun(Base):
+    __tablename__ = "inventory_report_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "scheduled_for",
+            name="uq_inventory_report_run_org_scheduled",
+        ),
+        Index(
+            "ix_inventory_report_run_status_next",
+            "status",
+            "next_attempt_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True
+    )
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    attempts: Mapped[int] = mapped_column(default=0)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    document_id: Mapped[str | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
+    )
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class VrpImportBatch(Base):
     __tablename__ = "vrp_import_batches"
     __table_args__ = (

@@ -14,6 +14,8 @@ from app.email_imap import poll_imap_once
 from app.models import (
     Document,
     DocumentProcessingJob,
+    InventoryReportRun,
+    InventoryReportSchedule,
     OutboxEvent,
     Plugin,
     User,
@@ -22,6 +24,7 @@ from app.models import (
     utc_now,
 )
 from app.services.ai_processing import DocumentAiPipeline
+from app.services.inventory_reports import InventoryReportService
 from app.services.plugin_runtime import PluginRuntime
 from app.services.vrp_imports import (
     VrpImportNotFoundError,
@@ -136,6 +139,12 @@ def process_vrp_import_batch(batch_id: str) -> None:
 
 
 @dramatiq.actor(max_retries=3, min_backoff=5000)
+def process_inventory_report_run(run_id: str) -> None:
+    with SessionLocal() as session:
+        InventoryReportService(session).process_run(run_id)
+
+
+@dramatiq.actor(max_retries=3, min_backoff=5000)
 def run_vrp_scheduler() -> None:
     now = utc_now()
     stale_before = now - timedelta(minutes=10)
@@ -212,6 +221,67 @@ def run_vrp_scheduler() -> None:
                 after=now,
             )
 
+        stale_report_runs = session.scalars(
+            select(InventoryReportRun)
+            .where(
+                InventoryReportRun.status == "PROCESSING",
+                InventoryReportRun.started_at < stale_before,
+            )
+            .with_for_update(skip_locked=True)
+        )
+        for report_run in stale_report_runs:
+            if report_run.attempts < 3:
+                report_run.status = "PENDING"
+                report_run.next_attempt_at = now
+            else:
+                report_run.status = "FAILED"
+                report_run.completed_at = now
+                report_run.error_message = (
+                    report_run.error_message or "A riport worker nem fejezte be a futást."
+                )
+
+        due_report_schedules = session.scalars(
+            select(InventoryReportSchedule)
+            .where(
+                InventoryReportSchedule.enabled.is_(True),
+                InventoryReportSchedule.next_run_at <= now,
+            )
+            .with_for_update(skip_locked=True)
+        )
+        for report_schedule in due_report_schedules:
+            scheduled_for = report_schedule.next_run_at
+            if scheduled_for is None:
+                continue
+            session.add(
+                InventoryReportRun(
+                    organization_id=report_schedule.organization_id,
+                    scheduled_for=scheduled_for,
+                    next_attempt_at=now,
+                )
+            )
+            report_schedule.next_run_at = calculate_next_run(
+                frequency=report_schedule.frequency,
+                processing_time=report_schedule.generation_time,
+                timezone_name=report_schedule.timezone,
+                weekly_day=report_schedule.weekly_day,
+                monthly_rule=report_schedule.monthly_rule,
+                after=now,
+            )
+        session.flush()
+        pending_report_run_ids = list(
+            session.scalars(
+                select(InventoryReportRun.id).where(
+                    InventoryReportRun.status == "PENDING",
+                    or_(
+                        InventoryReportRun.next_attempt_at.is_(None),
+                        InventoryReportRun.next_attempt_at <= now,
+                    ),
+                )
+            )
+        )
+
+    for report_run_id in pending_report_run_ids:
+        process_inventory_report_run.send(report_run_id)
     run_vrp_scheduler.send_with_options(
         delay=max(settings.vrp_scheduler_poll_seconds, 1) * 1000
     )

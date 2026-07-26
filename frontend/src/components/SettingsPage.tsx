@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ChevronRight,
+  ClipboardCheck,
   CloudUpload,
   FileSpreadsheet,
   Mail,
@@ -16,17 +17,21 @@ import {
 import type { Session } from "../types";
 import { APP_VERSION } from "../version";
 import AiSettingsPanel from "./AiSettingsPanel";
+import InventoryReportSettingsPanel from "./InventoryReportSettingsPanel";
 
 export type SettingsTarget =
   | "identity"
   | "uploads"
   | "vrp"
   | "email"
-  | "plugins";
+  | "plugins"
+  | "reports"
+  | "documents";
 
 type Props = {
   session: Session;
   focusAi?: boolean;
+  focusReports?: boolean;
   onNavigate: (target: SettingsTarget) => void;
 };
 
@@ -43,6 +48,7 @@ type SettingsCard = {
 export default function SettingsPage({
   session,
   focusAi = false,
+  focusReports = false,
   onNavigate
 }: Props) {
   const [online, setOnline] = useState(() => navigator.onLine);
@@ -69,7 +75,27 @@ export default function SettingsPage({
     );
   }, [focusAi]);
 
+  useEffect(() => {
+    if (!focusReports) return;
+    window.requestAnimationFrame(() =>
+      document.getElementById("inventory-report-settings")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      })
+    );
+  }, [focusReports]);
+
   const cards: SettingsCard[] = [
+      {
+        target: "reports",
+        eyebrow: "Automatikus jelentések",
+        title: "AI-leltár PDF-ben",
+        description:
+          "Napi, heti vagy havi készletleltár automatikus PDF-generálással és dokumentumtári mentéssel.",
+        action: "Leltárütemezés beállítása",
+        icon: ClipboardCheck,
+        visible: can("settings.read") && can("reports.read")
+      },
       {
         target: "identity",
         eyebrow: "Fiók és hozzáférés",
@@ -198,7 +224,14 @@ export default function SettingsPage({
               <button
                 key={card.target}
                 className="settings-card"
-                onClick={() => onNavigate(card.target)}
+                onClick={() => {
+                  if (card.target === "reports") {
+                    document
+                      .getElementById("inventory-report-settings")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                  onNavigate(card.target);
+                }}
                 aria-label={`${card.title}: ${card.action}`}
               >
                 <span className="settings-card-icon">
@@ -218,6 +251,16 @@ export default function SettingsPage({
           })}
         </div>
       </section>
+
+      {can("settings.read") && can("reports.read") ? (
+        <div id="inventory-report-settings" className="settings-anchor-section">
+          <InventoryReportSettingsPanel
+            canWrite={can("settings.write") && can("reports.generate")}
+            canGenerate={can("reports.generate")}
+            onOpenDocuments={() => onNavigate("documents")}
+          />
+        </div>
+      ) : null}
 
       {can("settings.read") ? (
         <div id="ai-settings" className="settings-anchor-section">

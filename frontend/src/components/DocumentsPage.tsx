@@ -39,6 +39,14 @@ const statusLabels: Record<string, string> = {
   REVERSED: "Visszavonva"
 };
 
+const documentTypeLabels: Record<string, string> = {
+  goods_receipt: "Szállítólevél",
+  delivery_note: "Szállítólevél",
+  inventory_report: "Automatikus AI-leltár"
+};
+
+const receiptDocumentTypes = new Set(["goods_receipt", "delivery_note"]);
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   if (bytes < 1024) return `${bytes} B`;
@@ -85,7 +93,10 @@ export default function DocumentsPage({
     const matchesSearch =
       !needle ||
       document.original_filename.toLocaleLowerCase("hu").includes(needle) ||
-      document.sha256_hash.includes(needle);
+      document.sha256_hash.includes(needle) ||
+      (documentTypeLabels[document.document_type] ?? document.document_type)
+        .toLocaleLowerCase("hu")
+        .includes(needle);
     return (
       matchesSearch &&
       (statusFilter === "ALL" || document.status === statusFilter)
@@ -230,6 +241,10 @@ export default function DocumentsPage({
                           <small>
                             {document.page_count || "–"} oldal · {formatBytes(document.size_bytes)}
                           </small>
+                          <small className="document-type-label">
+                            {documentTypeLabels[document.document_type] ??
+                              document.document_type}
+                          </small>
                         </span>
                       </div>
                     </td>
@@ -259,11 +274,18 @@ export default function DocumentsPage({
                     <td>
                       <div className="row-actions">
                         <button
-                          className="icon-button"
+                          className={
+                            document.document_type === "inventory_report"
+                              ? "text-button report-download-button"
+                              : "icon-button"
+                          }
                           aria-label={`${document.original_filename} letöltése`}
                           onClick={() => downloadMutation.mutate(document)}
                         >
                           <Download aria-hidden="true" />
+                          {document.document_type === "inventory_report"
+                            ? "PDF letöltése"
+                            : null}
                         </button>
                         {document.status === "UPLOADED" && (
                           <button
@@ -282,7 +304,8 @@ export default function DocumentsPage({
                             Ellenőrzés
                           </button>
                         )}
-                        {["READY_FOR_CONFIRMATION", "COMPLETED", "REVERSED"].includes(document.status) && (
+                        {receiptDocumentTypes.has(document.document_type) &&
+                          ["READY_FOR_CONFIRMATION", "COMPLETED", "REVERSED"].includes(document.status) && (
                           <button
                             className="text-button"
                             onClick={() => onOpenReceipt(document.id)}

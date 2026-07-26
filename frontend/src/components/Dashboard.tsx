@@ -85,6 +85,7 @@ type RouteState = {
   vrpBatchId: string | null;
   identityTab: IdentityTab;
   settingsAi: boolean;
+  settingsReports: boolean;
 };
 
 const formatter = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 3 });
@@ -96,7 +97,8 @@ function readRoute(locked: boolean): RouteState {
       documentId: null,
       vrpBatchId: null,
       identityTab: "security",
-      settingsAi: false
+      settingsAi: false,
+      settingsReports: false
     };
   }
 
@@ -107,7 +109,8 @@ function readRoute(locked: boolean): RouteState {
     documentId: null,
     vrpBatchId: null,
     identityTab: "users",
-    settingsAi: false
+    settingsAi: false,
+    settingsReports: false
   };
 
   if (path === "/" && legacyView) {
@@ -142,8 +145,17 @@ function readRoute(locked: boolean): RouteState {
   }
   if (path === "/email") return { ...defaults, view: "email" };
   if (path === "/plugins") return { ...defaults, view: "plugins" };
-  if (path === "/settings" || path === "/settings/ai") {
-    return { ...defaults, view: "settings", settingsAi: path === "/settings/ai" };
+  if (
+    path === "/settings" ||
+    path === "/settings/ai" ||
+    path === "/settings/reports"
+  ) {
+    return {
+      ...defaults,
+      view: "settings",
+      settingsAi: path === "/settings/ai",
+      settingsReports: path === "/settings/reports"
+    };
   }
   const identityRoutes: Record<string, IdentityTab> = {
     "/admin/users": "users",
@@ -178,7 +190,9 @@ function routePath(route: RouteState): string {
   if (route.view === "email") return "/email";
   if (route.view === "plugins") return "/plugins";
   if (route.view === "settings") {
-    return route.settingsAi ? "/settings/ai" : "/settings";
+    if (route.settingsAi) return "/settings/ai";
+    if (route.settingsReports) return "/settings/reports";
+    return "/settings";
   }
   if (route.view === "identity") {
     const identityPaths: Record<IdentityTab, string> = {
@@ -204,6 +218,9 @@ export default function Dashboard({
     initialRoute.identityTab
   );
   const [settingsAi, setSettingsAi] = useState(initialRoute.settingsAi);
+  const [settingsReports, setSettingsReports] = useState(
+    initialRoute.settingsReports
+  );
   const [search, setSearch] = useState("");
   const [productDialog, setProductDialog] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -230,6 +247,7 @@ export default function Dashboard({
         vrpBatchId?: string | null;
         identityTab?: IdentityTab;
         settingsAi?: boolean;
+        settingsReports?: boolean;
         replace?: boolean;
       } = {}
     ) => {
@@ -238,13 +256,15 @@ export default function Dashboard({
         documentId: options.documentId ?? null,
         vrpBatchId: options.vrpBatchId ?? null,
         identityTab: options.identityTab ?? identityTab,
-        settingsAi: options.settingsAi ?? false
+        settingsAi: options.settingsAi ?? false,
+        settingsReports: options.settingsReports ?? false
       };
       setActiveView(next.view);
       setSelectedDocumentId(next.documentId);
       setSelectedVrpBatchId(next.vrpBatchId);
       setIdentityTab(next.identityTab);
       setSettingsAi(next.settingsAi);
+      setSettingsReports(next.settingsReports);
       setMobileMoreOpen(false);
       const nextPath = routePath(next);
       if (`${window.location.pathname}${window.location.search}` !== nextPath) {
@@ -267,6 +287,7 @@ export default function Dashboard({
       setSelectedVrpBatchId(next.vrpBatchId);
       setIdentityTab(next.identityTab);
       setSettingsAi(next.settingsAi);
+      setSettingsReports(next.settingsReports);
       setMobileMoreOpen(false);
     };
     window.addEventListener("popstate", handlePopState);
@@ -446,7 +467,14 @@ export default function Dashboard({
             <SettingsPage
               session={session}
               focusAi={settingsAi}
-              onNavigate={(target) => navigateTo(target)}
+              focusReports={settingsReports}
+              onNavigate={(target) => {
+                if (target === "reports") {
+                  navigateTo("settings", { settingsReports: true });
+                } else {
+                  navigateTo(target);
+                }
+              }}
             />
           </Suspense>
         ) : activeView === "identity" ? (

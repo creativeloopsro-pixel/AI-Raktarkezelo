@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.13.0 hatókör
+## 0.14.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -92,6 +92,7 @@ készletkönyvelés előtti AI-összegzést és teljes bevételezés-visszavoná
 | Resumable upload API | Tenant-, felhasználó- és célhatárolt munkamenet, idempotens darabok, végső SHA-256 és objektumtár |
 | Leltárjóváhagyás | Konfigurálható eltérésküszöb, review feladat és admin/manager jóváhagyás |
 | Mobil leltár PWA | Nagy számláló, +1/−1, kartonkód-szorzó, Bluetooth/kézi bevitel és offline állapot |
+| Automatikus leltárriport | Szervezeti napi/heti/havi ütemezés, tartós retry feladat, többoldalas PDF, dokumentumtári archiválás és letöltés |
 
 ## Modulhatárok
 
@@ -107,5 +108,5 @@ készletkönyvelés előtti AI-összegzést és teljes bevételezés-visszavoná
 
 ## Következő tervezett kiadás
 
-`0.13.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
-rendszerállapot-értesítések.
+`0.15.0`: import-, készlet- és rendszerállapot-értesítések, valamint
+riportértesítési csatornák.

@@ -1182,6 +1182,30 @@ button:disabled {
   font-size: 0.67rem;
 }
 
+.document-name-cell .document-type-label {
+  width: fit-content;
+  margin-top: 0.32rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  color: var(--navy);
+  background: var(--sand);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-download-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.report-download-button svg {
+  width: 0.9rem;
+}
+
 .file-glyph {
   display: grid;
   width: 2.4rem;
@@ -6530,6 +6554,300 @@ button:disabled {
   width: 1.1rem;
 }
 
+.inventory-report-settings {
+  border-top: 1px solid var(--line);
+  padding: 2.5rem 0;
+}
+
+.inventory-report-settings-heading {
+  align-items: flex-end;
+}
+
+.report-schedule-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.report-schedule-status.active {
+  color: var(--success);
+}
+
+.report-schedule-status svg {
+  width: 1rem;
+}
+
+.report-settings-loading {
+  display: flex;
+  min-height: 7rem;
+  margin-top: 1.35rem;
+  border-block: 1px solid var(--line);
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.inventory-report-panel {
+  margin-top: 1.35rem;
+  border-block: 1px solid var(--line);
+}
+
+.report-schedule-summary {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+}
+
+.report-schedule-summary > div {
+  display: grid;
+  min-width: 0;
+  min-height: 7.6rem;
+  align-content: center;
+  padding: 1.1rem 1.25rem;
+}
+
+.report-schedule-summary > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.report-schedule-summary small,
+.report-schedule-summary strong,
+.report-schedule-summary em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-schedule-summary small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-schedule-summary strong {
+  margin-top: 0.35rem;
+  font-size: 0.87rem;
+}
+
+.report-schedule-summary em {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-style: normal;
+}
+
+.report-schedule-summary .report-summary-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.report-summary-icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--accent-dark);
+  background: var(--sand);
+}
+
+.report-summary-icon svg {
+  width: 1.3rem;
+}
+
+.report-schedule-form {
+  display: grid;
+  border-top: 1px solid var(--line);
+  grid-template-columns: minmax(14rem, 0.72fr) minmax(20rem, 1.28fr);
+  gap: 1.15rem 2rem;
+  padding: 1.35rem 1.25rem;
+  background: rgb(255 255 255 / 32%);
+}
+
+.report-schedule-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-top: 0.3rem;
+}
+
+.report-schedule-intro > svg {
+  width: 1.2rem;
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+}
+
+.report-schedule-intro strong,
+.report-schedule-intro small {
+  display: block;
+}
+
+.report-schedule-intro strong {
+  font-size: 0.78rem;
+}
+
+.report-schedule-intro small {
+  margin-top: 0.28rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+.report-enabled-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 0.75rem;
+  cursor: pointer;
+}
+
+.report-enabled-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.report-enabled-toggle > span[aria-hidden="true"] {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sand);
+  transition: background 160ms ease;
+}
+
+.report-enabled-toggle > span[aria-hidden="true"]::after {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.22rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px rgb(13 41 64 / 20%);
+  content: "";
+  transition: transform 160ms ease;
+}
+
+.report-enabled-toggle input:checked + span[aria-hidden="true"] {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.report-enabled-toggle input:checked + span[aria-hidden="true"]::after {
+  transform: translateX(1.22rem);
+}
+
+.report-enabled-toggle input:focus-visible + span[aria-hidden="true"] {
+  outline: 3px solid rgb(197 125 8 / 18%);
+  outline-offset: 2px;
+}
+
+.report-enabled-toggle strong,
+.report-enabled-toggle small {
+  display: block;
+}
+
+.report-enabled-toggle strong {
+  font-size: 0.76rem;
+}
+
+.report-enabled-toggle small {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.64rem;
+}
+
+.report-schedule-fields {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.report-schedule-fields label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.report-schedule-fields select,
+.report-schedule-fields input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.58rem;
+  outline: 0;
+  padding: 0 0.75rem;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.74rem;
+}
+
+.report-schedule-fields select:focus,
+.report-schedule-fields input:focus {
+  border-color: var(--accent-dark);
+  box-shadow: 0 0 0 3px rgb(197 125 8 / 12%);
+}
+
+.report-schedule-feedback {
+  display: flex;
+  margin: 0;
+  grid-column: 2;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.report-schedule-feedback svg {
+  width: 1rem;
+}
+
+.report-schedule-feedback.success {
+  color: var(--success);
+}
+
+.report-schedule-feedback.error {
+  color: var(--danger);
+}
+
+.report-schedule-actions {
+  display: flex;
+  grid-column: 2;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.report-settings-readonly {
+  display: flex;
+  border-top: 1px solid var(--line);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.25rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.report-settings-readonly svg {
+  width: 1.1rem;
+}
+
 .settings-runtime {
   display: flex;
   border-top: 1px solid var(--line);
@@ -6577,6 +6895,16 @@ button:disabled {
     grid-template-columns: 1fr 1fr;
   }
 
+  .report-schedule-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .report-schedule-summary > div:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    grid-column: 1 / -1;
+  }
+
   .ai-provider-summary > div:nth-child(3) {
     border-top: 1px solid var(--line);
     border-left: 0;
@@ -6585,6 +6913,16 @@ button:disabled {
 
   .ai-key-form {
     grid-template-columns: 1fr;
+  }
+
+  .report-schedule-form {
+    grid-template-columns: 1fr;
+  }
+
+  .report-schedule-fields,
+  .report-schedule-feedback,
+  .report-schedule-actions {
+    grid-column: 1;
   }
 
   .ai-key-feedback,
@@ -6634,6 +6972,47 @@ button:disabled {
   .ai-settings-heading {
     display: grid;
     gap: 0.8rem;
+  }
+
+  .inventory-report-settings-heading {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .report-schedule-status {
+    width: fit-content;
+  }
+
+  .report-schedule-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .report-schedule-summary > div {
+    min-height: 6.5rem;
+  }
+
+  .report-schedule-summary > div + div,
+  .report-schedule-summary > div:nth-child(3) {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    grid-column: auto;
+  }
+
+  .report-schedule-form {
+    padding: 1rem 0.85rem;
+  }
+
+  .report-schedule-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .report-schedule-actions {
+    display: grid;
+  }
+
+  .report-schedule-actions .secondary-button,
+  .report-schedule-actions .primary-button {
+    width: 100%;
   }
 
   .ai-connection-status {

@@ -10,6 +10,7 @@ from app.api import (
     inventory,
     plugins,
     products,
+    reports,
     review_tasks,
     stock,
     system,
@@ -25,6 +26,7 @@ api_router.include_router(identity.router)
 api_router.include_router(products.router)
 api_router.include_router(stock.router)
 api_router.include_router(inventory.router)
+api_router.include_router(reports.router)
 api_router.include_router(documents.router)
 api_router.include_router(uploads.router)
 api_router.include_router(review_tasks.router)

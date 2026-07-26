@@ -6,12 +6,9 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.13.0` - UX-biztonsági kiadás valódi, frissíthető és vissza-navigálható
-útvonalakkal; összevont Dokumentumok munkatérrel; legfeljebb öt elemes mobil
-alsó navigációval; kereshető, harmonikás szerepkör- és API-hatókör
-szerkesztővel. A szállítólevélből indított AI-folyamat készletmódosítás előtti
-tételösszegzést, külön jóváhagyást és auditált, idempotens közvetlen
-visszavonást kapott.
+`0.14.0` - automatikus AI-készletleltár napi, heti vagy havi ütemezéssel,
+magyar ékezeteket támogató többoldalas PDF-fel, dokumentumtári archiválással és
+jogosultságvédett letöltéssel. A Beállításokból kézi tesztleltár is indítható.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

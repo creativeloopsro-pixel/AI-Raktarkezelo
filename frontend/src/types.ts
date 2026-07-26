@@ -274,6 +274,15 @@ export type DocumentItem = {
     issues?: string[];
     virus_scan?: string;
     declared_content_type?: string | null;
+    report_frequency?: string;
+    scheduled_for?: string;
+    generated_at?: string;
+    report_run_id?: string | null;
+    product_count?: number;
+    total_quantity?: string;
+    low_stock_count?: number;
+    negative_stock_count?: number;
+    missing_ean_count?: number;
   };
   uploaded_by: string | null;
   created_at: string;
@@ -448,6 +457,33 @@ export type VrpScheduleUpdate = Pick<
   | "unknown_product_policy"
   | "negative_stock_policy"
   | "overlap_policy"
+>;
+
+export type InventoryReportSchedule = {
+  organization_id: string;
+  enabled: boolean;
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY";
+  generation_time: string;
+  timezone: string;
+  weekly_day: string;
+  monthly_rule: string;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  last_document_id: string | null;
+  last_error_message: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InventoryReportScheduleUpdate = Pick<
+  InventoryReportSchedule,
+  | "enabled"
+  | "frequency"
+  | "generation_time"
+  | "timezone"
+  | "weekly_day"
+  | "monthly_rule"
 >;
 
 export type EmailInboundSettings = {
