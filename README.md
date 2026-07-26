@@ -6,9 +6,9 @@ architektúra.
 
 ## Aktuális verzió
 
-`0.8.3` - működő, jogosultságtudatos Beállítások központ, részletes
-jogosultságkezelés, opcionális adminisztrátori MFA, védett munkamenetek és
-folytatható offline fájlfeltöltés.
+`0.9.0` - mobilkamerás vonalkódos bevételezés, bizonylatfotóból indítható
+magas biztonságú AI automatikus készletkönyvelés, részletes jogosultságkezelés,
+védett munkamenetek és folytatható offline fájlfeltöltés.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,
@@ -119,6 +119,22 @@ Egyetlen esedékes AI-dokumentum helyi feldolgozása:
 cd backend
 .\.venv\Scripts\python.exe -m app.worker --once
 ```
+
+## Vonalkódos és automatikus bevételezés
+
+Az **Áru érkezett** műveletben ugyanaz a mobilkamerás EAN/UPC/Code 128/Data
+Matrix/QR olvasó használható, mint a leltárban. A csomagolási egységhez kötött
+kartonkód a darabszámot automatikusan alapegységre váltja.
+
+A **Feltöltési sor** mobilról közvetlen bizonylatfotót is készít. Az
+„AI-felismerés és automatikus bevételezés” bekapcsolásakor a feltöltés
+automatikusan feldolgozásra kerül. Készletkönyvelés csak legalább az
+`APP_AI_AUTO_CONFIRM_MIN_CONFIDENCE` küszöböt elérő, hibamentes, vonalkóddal
+vagy pontos névvel párosított tételeknél történik; minden más eset kézi
+ellenőrzésre marad. A részletes folyamat:
+[`docs/AUTOMATIC_GOODS_RECEIPT.md`](docs/AUTOMATIC_GOODS_RECEIPT.md).
+Nagy helyi vision modell első betöltéséhez az alapértelmezett
+`APP_AI_TIMEOUT_SECONDS` érték `300` másodperc.
 
 ## Plugin SDK
 

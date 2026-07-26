@@ -11,7 +11,7 @@ def handle_ai_document_uploaded(
     context: PluginContext, event: PluginEvent
 ) -> dict:
     document = context.get_assigned_document(event.aggregate_id)
-    if document["document_type"] != "goods_receipt":
+    if document["document_type"] not in {"goods_receipt", "delivery_note"}:
         return {"status": "SKIPPED", "reason": "unsupported_document_type"}
     if document["status"] != "UPLOADED":
         return {"status": "SKIPPED", "reason": "document_not_upload_ready"}

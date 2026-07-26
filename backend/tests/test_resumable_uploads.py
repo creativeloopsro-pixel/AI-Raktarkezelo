@@ -2,7 +2,9 @@ from hashlib import sha256
 from io import BytesIO
 
 from PIL import Image
+from sqlalchemy import select
 
+from app.models import Document, OutboxEvent
 from app.storage import LocalObjectStorage
 
 
@@ -55,6 +57,7 @@ def _create_upload(
 def test_resumable_document_upload_is_idempotent_and_cancellable(
     client,
     monkeypatch,
+    session,
     tmp_path,
 ) -> None:
     storage = LocalObjectStorage(tmp_path / "resumable-objects")
@@ -72,7 +75,11 @@ def test_resumable_document_upload_is_idempotent_and_cancellable(
         filename="szamla.png",
         content_type="image/png",
         payload=payload,
-        metadata={"document_type": "goods_receipt"},
+        metadata={
+            "document_type": "goods_receipt",
+            "auto_process_requested": True,
+            "auto_confirm_requested": True,
+        },
     )
     assert upload["total_chunks"] == 1
     chunk_headers = {
@@ -108,6 +115,18 @@ def test_resumable_document_upload_is_idempotent_and_cancellable(
         f"/api/v1/documents/{document_id}",
         headers=headers,
     ).status_code == 200
+    document = session.get(Document, document_id)
+    assert document is not None
+    assert document.validation_summary["auto_process_requested"] is True
+    assert document.validation_summary["auto_confirm_requested"] is True
+    uploaded_event = session.scalar(
+        select(OutboxEvent).where(
+            OutboxEvent.aggregate_id == document_id,
+            OutboxEvent.event_type == "document.uploaded",
+        )
+    )
+    assert uploaded_event is not None
+    assert uploaded_event.payload["auto_process_requested"] is True
 
     pending = _create_upload(
         client,

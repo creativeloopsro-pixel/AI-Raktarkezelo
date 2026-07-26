@@ -326,6 +326,18 @@ class ResumableUploadService:
                             source_metadata={
                                 "client_upload_id": upload.client_upload_id,
                                 "resumable": True,
+                                "auto_process_requested": bool(
+                                    upload.upload_metadata.get(
+                                        "auto_process_requested",
+                                        False,
+                                    )
+                                ),
+                                "auto_confirm_requested": bool(
+                                    upload.upload_metadata.get(
+                                        "auto_confirm_requested",
+                                        False,
+                                    )
+                                ),
                             },
                         )
                         entity_type = "document"
@@ -439,7 +451,20 @@ class ResumableUploadService:
             document_type = str(metadata.get("document_type") or "goods_receipt")
             if not document_type or len(document_type) > 60:
                 raise ResumableUploadMetadataError
-            return {"document_type": document_type}
+            auto_process_requested = metadata.get("auto_process_requested", False)
+            auto_confirm_requested = metadata.get("auto_confirm_requested", False)
+            if not isinstance(auto_process_requested, bool) or not isinstance(
+                auto_confirm_requested,
+                bool,
+            ):
+                raise ResumableUploadMetadataError
+            return {
+                "document_type": document_type,
+                "auto_process_requested": (
+                    auto_process_requested or auto_confirm_requested
+                ),
+                "auto_confirm_requested": auto_confirm_requested,
+            }
         try:
             period_start = date.fromisoformat(str(metadata["period_start"]))
             period_end = date.fromisoformat(str(metadata["period_end"]))

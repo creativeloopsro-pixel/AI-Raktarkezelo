@@ -4,6 +4,41 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.9.0] - 2026-07-26
+
+### Hozzáadva
+
+- Mobilkamerás, natív `BarcodeDetector` és ZXing fallback alapú termékazonosítás
+  az **Áru érkezett** bevételezési ablakban, Bluetooth- és kézi kódbevitellel.
+- A termékvonalkódhoz rendelt karton- vagy más csomagolási egység automatikus
+  alapegység-konverziója a kézi bevételezéskor.
+- Közvetlen mobilos bizonylatfotó-készítés, valamint alapértelmezetten
+  bekapcsolt „AI-felismerés és automatikus bevételezés” opció a megszakítható
+  feltöltési sorban.
+- A feltöltés metaadataival indított automatikus AI-feldolgozás bejövő
+  bizonylatnál és szállítólevélnél.
+- Magas biztonságú AI automatikus készletkönyvelés a központi `StockService`
+  rétegen keresztül, teljes audit- és outbox-eseménnyel.
+
+### Biztonság
+
+- Automatikus könyvelés csak hibamentes tervezetnél, legalább 98%-os
+  tételkonfidenciánál, vonalkódos vagy pontos névegyezésnél és megfelelő
+  feltöltői jogosultságokkal történik.
+- Bizonytalan, lexikai, ismeretlen vagy hibás tételek nem kerülnek automatikusan
+  készletre; kézi ellenőrzésre vagy jóváhagyásra várnak.
+- A dokumentumtól a készletmozgásig minden automatikus lépés idempotens,
+  szervezethez kötött és auditált.
+- Az Ollama strukturált JSON-sémás kimenete alapértelmezetten bekapcsolva.
+
+### Konfiguráció
+
+- Új `APP_AI_AUTO_CONFIRM_RECEIPTS` és
+  `APP_AI_AUTO_CONFIRM_MIN_CONFIDENCE` beállítás az automatikus
+  készletkönyveléshez.
+- A helyi multimodális modell hideg betöltéséhez az alapértelmezett
+  `APP_AI_TIMEOUT_SECONDS` érték 300 másodpercre emelve.
+
 ## [0.8.3] - 2026-07-26
 
 ### Javítva

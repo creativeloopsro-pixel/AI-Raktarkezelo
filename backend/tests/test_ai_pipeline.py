@@ -15,6 +15,7 @@ from app.config import Settings
 from app.models import (
     AiRequest,
     AiToolCall,
+    AuditLog,
     GoodsReceiptDraft,
     PackagingUnit,
     ProductBarcode,
@@ -107,7 +108,13 @@ def extraction(*, confidence: float = 0.99, extra: dict | None = None) -> dict:
     return result
 
 
-def prepare_job(session: Session, seeded, tmp_path):
+def prepare_job(
+    session: Session,
+    seeded,
+    tmp_path,
+    *,
+    auto_confirm_requested: bool = False,
+):
     _, user, product = seeded
     packaging = PackagingUnit(
         organization_id=user.organization_id,
@@ -142,6 +149,10 @@ def prepare_job(session: Session, seeded, tmp_path):
         filename="known-receipt.pdf",
         declared_content_type="application/pdf",
         correlation_id="ai-document-upload",
+        source_metadata={
+            "auto_process_requested": auto_confirm_requested,
+            "auto_confirm_requested": auto_confirm_requested,
+        },
     )
     job = DocumentService(
         session,
@@ -203,6 +214,89 @@ def test_ai_pipeline_matches_packaging_and_confirms_exactly_once(
     assert session.scalar(select(func.count()).select_from(StockMovement)) == 1
     session.refresh(document)
     assert document.status == "COMPLETED"
+
+
+def test_ai_pipeline_auto_confirms_high_confidence_requested_receipt(
+    session: Session,
+    seeded,
+    tmp_path,
+) -> None:
+    user, product, document, job, storage, resolved_settings = prepare_job(
+        session,
+        seeded,
+        tmp_path,
+        auto_confirm_requested=True,
+    )
+    confirmed = DocumentAiPipeline(
+        session,
+        provider=FakeProvider(extraction(confidence=0.99)),
+        preprocessor=DocumentImagePreprocessor(
+            storage=storage,
+            settings=resolved_settings,
+        ),
+        settings=resolved_settings,
+    ).process(job.id)
+
+    assert confirmed is not None
+    assert confirmed.status == "CONFIRMED"
+    assert confirmed.confirmed_by == user.id
+    balance = session.scalar(
+        select(StockBalance).where(StockBalance.product_id == product.id)
+    )
+    assert balance is not None and balance.quantity == 24
+    assert session.scalar(select(func.count()).select_from(StockMovement)) == 1
+    session.refresh(document)
+    assert document.status == "COMPLETED"
+    confirmation = session.scalar(
+        select(AuditLog).where(
+            AuditLog.entity_id == confirmed.id,
+            AuditLog.action == "goods_receipt.confirmed",
+        )
+    )
+    assert confirmation is not None
+    assert confirmation.details["confirmation_source"] == "AI_AUTOMATIC"
+
+
+def test_ai_pipeline_keeps_borderline_auto_receipt_for_manual_confirmation(
+    session: Session,
+    seeded,
+    tmp_path,
+) -> None:
+    _, product, document, job, storage, resolved_settings = prepare_job(
+        session,
+        seeded,
+        tmp_path,
+        auto_confirm_requested=True,
+    )
+    draft = DocumentAiPipeline(
+        session,
+        provider=FakeProvider(extraction(confidence=0.95)),
+        preprocessor=DocumentImagePreprocessor(
+            storage=storage,
+            settings=resolved_settings,
+        ),
+        settings=resolved_settings,
+    ).process(job.id)
+
+    assert draft is not None and draft.status == "READY"
+    balance = session.scalar(
+        select(StockBalance).where(StockBalance.product_id == product.id)
+    )
+    assert balance is not None and balance.quantity == 0
+    assert session.scalar(select(func.count()).select_from(StockMovement)) == 0
+    session.refresh(document)
+    assert document.status == "READY_FOR_CONFIRMATION"
+    skipped = session.scalar(
+        select(AuditLog).where(
+            AuditLog.entity_id == draft.id,
+            AuditLog.action == "goods_receipt.auto_confirmation_skipped",
+        )
+    )
+    assert skipped is not None
+    assert (
+        "CONFIDENCE_BELOW_AUTO_CONFIRM_THRESHOLD"
+        in skipped.details["reasons"]
+    )
 
 
 def test_invalid_ai_output_cannot_create_receipt_or_stock(

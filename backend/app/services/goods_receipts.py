@@ -151,6 +151,7 @@ class GoodsReceiptService:
         user: User,
         draft_id: str,
         correlation_id: str,
+        confirmation_source: str = "MANUAL",
     ) -> GoodsReceiptDraft:
         draft = self._locked_draft(user.organization_id, draft_id)
         if draft.status == "CONFIRMED":
@@ -215,7 +216,11 @@ class GoodsReceiptService:
         for task in open_reviews:
             task.status = "RESOLVED"
             task.resolved_by = user.id
-            task.resolution_note = "A bevételezési tervezet ellenőrizve és jóváhagyva."
+            task.resolution_note = (
+                "Az AI magas biztonságú egyezés alapján automatikusan bevételezte."
+                if confirmation_source == "AI_AUTOMATIC"
+                else "A bevételezési tervezet ellenőrizve és jóváhagyva."
+            )
             task.resolved_at = now
 
         self.session.add(
@@ -229,6 +234,7 @@ class GoodsReceiptService:
                 details={
                     "document_id": draft.document_id,
                     "item_count": len(items),
+                    "confirmation_source": confirmation_source,
                 },
             )
         )
@@ -241,6 +247,7 @@ class GoodsReceiptService:
                 payload={
                     "document_id": draft.document_id,
                     "item_count": len(items),
+                    "confirmation_source": confirmation_source,
                     "correlation_id": correlation_id,
                 },
             )

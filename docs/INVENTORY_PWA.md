@@ -34,6 +34,12 @@ olvasó Enter billentyűvel lezárt adatát is fogadja.
 Termékkód esetén az alap növekmény `1`. Ha a kód csomagolási egységhez
 tartozik, a számláló a `multiplier_to_base_unit` értékkel növekszik.
 
+Ugyanez a kódolvasó az **Áru érkezett** bevételezési ablakban is elérhető.
+Beolvasáskor kiválasztja a terméket és a kódhoz tartozó csomagolási egységet.
+A felhasználó a beérkezett csomagok számát adja meg, a kliens pedig a
+`multiplier_to_base_unit` szorzóval számított alapegység-mennyiséget küldi a
+tranzakciós készlet API-nak.
+
 ## Offline sor
 
 Az IndexedDB `inventory_operations` tára a következőket őrzi:

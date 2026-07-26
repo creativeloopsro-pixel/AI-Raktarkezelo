@@ -139,6 +139,8 @@ def upload_document(
     _: DocumentUploader,
     file: Annotated[UploadFile, File(description="PDF, JPG, PNG vagy TIFF dokumentum")],
     document_type: Annotated[str, Form(max_length=60)] = "goods_receipt",
+    auto_process: Annotated[bool, Form()] = False,
+    auto_confirm: Annotated[bool, Form()] = False,
     correlation_header: Annotated[str | None, Header(alias="X-Correlation-ID")] = None,
 ) -> Document:
     try:
@@ -149,6 +151,10 @@ def upload_document(
             declared_content_type=file.content_type,
             document_type=document_type,
             correlation_id=_correlation_id(correlation_header),
+            source_metadata={
+                "auto_process_requested": auto_process or auto_confirm,
+                "auto_confirm_requested": auto_confirm,
+            },
         )
     except Exception as exc:
         raise _document_error(exc) from exc

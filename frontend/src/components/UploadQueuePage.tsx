@@ -10,6 +10,7 @@ import {
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
+  Camera,
   CalendarDays,
   CheckCircle2,
   CloudUpload,
@@ -18,6 +19,7 @@ import {
   Pause,
   Play,
   RefreshCw,
+  Sparkles,
   Trash2,
   Wifi,
   WifiOff,
@@ -83,6 +85,7 @@ export default function UploadQueuePage({
   const [targetType, setTargetType] = useState<LocalUploadTarget>("DOCUMENT");
   const [file, setFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState("goods_receipt");
+  const [autoReceive, setAutoReceive] = useState(true);
   const [periodStart, setPeriodStart] = useState(today());
   const [periodEnd, setPeriodEnd] = useState(today());
   const [externalReportId, setExternalReportId] = useState("");
@@ -90,11 +93,20 @@ export default function UploadQueuePage({
   const [formError, setFormError] = useState("");
   const [queueMessage, setQueueMessage] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
   const syncing = useRef(false);
   const pauseRequested = useRef(new Set<string>());
 
   const canDocument = permissions.includes("documents.upload");
   const canVrp = permissions.includes("vrp.upload");
+  const canAutoReceive = [
+    "documents.process",
+    "receipts.confirm",
+    "stock.receive"
+  ].every((permission) => permissions.includes(permission));
+  const aiDocumentType = ["goods_receipt", "delivery_note"].includes(
+    documentType
+  );
 
   const refreshQueue = useCallback(async () => {
     setUploads(await listLocalUploads(organizationId));
@@ -327,7 +339,13 @@ export default function UploadQueuePage({
       file_sha256: null,
       metadata:
         targetType === "DOCUMENT"
-          ? { document_type: documentType }
+          ? {
+              document_type: documentType,
+              auto_process_requested:
+                autoReceive && canAutoReceive && aiDocumentType,
+              auto_confirm_requested:
+                autoReceive && canAutoReceive && aiDocumentType
+            }
           : {
               period_start: periodStart,
               period_end: periodEnd,
@@ -503,19 +521,58 @@ export default function UploadQueuePage({
             }
             onChange={onFileChange}
           />
+          <input
+            ref={photoInput}
+            className="sr-only"
+            type="file"
+            accept="image/jpeg,image/png,image/tiff"
+            capture="environment"
+            onChange={onFileChange}
+          />
+          {targetType === "DOCUMENT" && (
+            <button
+              type="button"
+              className="secondary-button upload-photo-button"
+              onClick={() => photoInput.current?.click()}
+            >
+              <Camera aria-hidden="true" />
+              Fotó készítése a bizonylatról
+            </button>
+          )}
 
           {targetType === "DOCUMENT" ? (
-            <label>
-              Dokumentumtípus
-              <select
-                value={documentType}
-                onChange={(event) => setDocumentType(event.target.value)}
-              >
-                <option value="goods_receipt">Bejövő bizonylat</option>
-                <option value="delivery_note">Szállítólevél</option>
-                <option value="inventory_attachment">Leltármelléklet</option>
-              </select>
-            </label>
+            <>
+              <label>
+                Dokumentumtípus
+                <select
+                  value={documentType}
+                  onChange={(event) => setDocumentType(event.target.value)}
+                >
+                  <option value="goods_receipt">Bejövő bizonylat</option>
+                  <option value="delivery_note">Szállítólevél</option>
+                  <option value="inventory_attachment">Leltármelléklet</option>
+                </select>
+              </label>
+              <label className="auto-receive-toggle">
+                <input
+                  type="checkbox"
+                  checked={autoReceive}
+                  onChange={(event) => setAutoReceive(event.target.checked)}
+                  disabled={!canAutoReceive || !aiDocumentType}
+                />
+                <Sparkles aria-hidden="true" />
+                <span>
+                  <strong>AI-felismerés és automatikus bevételezés</strong>
+                  <small>
+                    {canAutoReceive && aiDocumentType
+                      ? "A biztosan felismert tételek automatikusan készletre kerülnek; a bizonytalanok ellenőrzésre várnak."
+                      : aiDocumentType
+                        ? "Ehhez feldolgozási és bevételezési jogosultság szükséges."
+                        : "Ehhez a dokumentumtípushoz nem indítható automatikus bevételezés."}
+                  </small>
+                </span>
+              </label>
+            </>
           ) : (
             <div className="upload-period-fields">
               <label>
@@ -607,6 +664,9 @@ export default function UploadQueuePage({
                             ? "Dokumentum"
                             : "VRP-riport"}{" "}
                           · {formatBytes(upload.size_bytes)}
+                          {upload.metadata.auto_confirm_requested === true
+                            ? " · AI automatikus bevételezés"
+                            : ""}
                         </span>
                       </div>
                       <span className={`upload-status ${upload.status.toLowerCase()}`}>

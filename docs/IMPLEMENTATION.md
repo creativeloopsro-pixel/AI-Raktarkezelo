@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.8.3 hatókör
+## 0.9.0 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -19,6 +19,9 @@ feltöltési munkamenetet kaptak.
 A Beállítások menüpont önálló, jogosultságtudatos konfigurációs központot kapott,
 amely a fiók-, MFA-, kapcsolat- és verzióállapot mellett a ténylegesen elérhető
 modulbeállításokhoz vezet.
+Az áruátvétel mobilkamerás vonalkódolvasással, a folytatható
+bizonylatfeltöltés pedig kérhető automatikus AI-feldolgozással és szigorúan
+feltételes, idempotens készletkönyveléssel bővült.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
@@ -40,7 +43,7 @@ modulbeállításokhoz vezet.
 | Worker | Dramatiq + Redis dispatch, adatbázisban tartós job, retry és stale-job helyreállítás |
 | AI audit | Modell-, prompt-, token-, idő- és tool-call metaadat minden kinyeréshez |
 | Product matching | Vonalkód, pontos név, lexikai egyezés és csomagolási konverzió |
-| Goods receipt | Ember által javítható tervezet és tranzakciós, idempotens készletkönyvelés |
+| Goods receipt | Ember által javítható tervezet, valamint magas konfidenciájú pontos egyezésnél automatikus, tranzakciós és idempotens készletkönyvelés |
 | VRP parser | CSV, XLSX és géppel olvasható PDF, verziózott többnyelvű oszlopfelismerés |
 | VRP deduplikáció | Fájlhash, külső riportazonosító, kanonikus tételhash és adatbázis-egyediség |
 | VRP időszakvédelem | Szervezeten belüli időszakátfedés blokkolása és review feladat |
@@ -63,7 +66,7 @@ modulbeállításokhoz vezet.
 | Plugin failure isolation | Végleges hibánál review feladat, audit és `plugin.failed` esemény |
 | Plugin admin PWA | Manifesttelepítés, engedélyezés, jogosultságok, beállítások és futásnapló |
 | Beépített pluginok | AI, VRP és e-mail közös szerződésre vezetve, működő készletfigyelő mintával |
-| Kamerás kódolvasás | Natív `BarcodeDetector` EAN/UPC/Code 128/Data Matrix/QR támogatással és ZXing fallbackkel |
+| Kamerás kódolvasás | Natív `BarcodeDetector` EAN/UPC/Code 128/Data Matrix/QR támogatással, ZXing fallbackkel a leltárban és a kézi bevételezésben |
 | Kézi leltár | Megszakítható leltármenet, tételes abszolút számlálás, okkód és korrekciós főkönyv |
 | Offline számlálás | IndexedDB műveleti sor egyedi `client_operation_id` értékkel, szünettel és automatikus újraküldéssel |
 | Offline fájlfeltöltés | IndexedDB Blob-várólista, kliens- és darabhash, szünet/folytatás és automatikus újraküldés |
@@ -85,5 +88,5 @@ modulbeállításokhoz vezet.
 
 ## Következő tervezett kiadás
 
-`0.9.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
+`0.10.0`: napi készlet-PDF, riportarchívum és import-, készlet- valamint
 rendszerállapot-értesítések.

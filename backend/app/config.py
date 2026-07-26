@@ -48,8 +48,8 @@ class Settings(BaseSettings):
     ollama_api_key: SecretStr = SecretStr("")
     ollama_model: str = "gemma4:31b"
     ai_prompt_version: str = "goods-receipt-v1"
-    ai_structured_output_enabled: bool = False
-    ai_timeout_seconds: int = 120
+    ai_structured_output_enabled: bool = True
+    ai_timeout_seconds: int = 300
     ai_max_retries: int = 3
     ai_retry_base_seconds: int = 30
     ai_circuit_failure_threshold: int = 3
@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     ai_confidence_threshold: float = 0.9
     ai_lexical_match_threshold: float = 0.88
     ai_quantity_outlier_threshold: float = 10000
+    ai_auto_confirm_receipts: bool = True
+    ai_auto_confirm_min_confidence: float = Field(default=0.98, ge=0.9, le=1)
     ai_max_image_side: int = 1800
     ai_worker_poll_seconds: int = 5
     vrp_max_upload_mb: int = 15

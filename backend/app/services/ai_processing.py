@@ -25,6 +25,7 @@ from app.models import (
     AiRequest,
     AiResult,
     AiToolCall,
+    AuditLog,
     Document,
     DocumentProcessingJob,
     GoodsReceiptDraft,
@@ -33,8 +34,11 @@ from app.models import (
     Product,
     ProductBarcode,
     ReviewTask,
+    User,
     utc_now,
 )
+from app.services.goods_receipts import GoodsReceiptService
+from app.services.identity import effective_permissions
 
 logger = logging.getLogger(__name__)
 
@@ -425,7 +429,127 @@ class DocumentAiPipeline:
         ai_request.completed_at = now
         self.session.commit()
         self.session.refresh(draft)
-        return draft
+        return self._auto_confirm_if_requested(draft, document, job.id)
+
+    def _auto_confirm_if_requested(
+        self,
+        draft: GoodsReceiptDraft,
+        document: Document,
+        job_id: str,
+    ) -> GoodsReceiptDraft:
+        metadata = document.validation_summary or {}
+        if not (
+            self.settings.ai_auto_confirm_receipts
+            and metadata.get("auto_confirm_requested") is True
+        ):
+            return draft
+
+        reasons: list[str] = []
+        items = list(draft.items)
+        if draft.status != "READY" or draft.validation_issues or not items:
+            reasons.append("DRAFT_NOT_READY")
+        minimum_confidence = Decimal(
+            str(self.settings.ai_auto_confirm_min_confidence)
+        )
+        if any(item.confidence < minimum_confidence for item in items):
+            reasons.append("CONFIDENCE_BELOW_AUTO_CONFIRM_THRESHOLD")
+        if any(item.match_method not in {"BARCODE", "EXACT_NAME"} for item in items):
+            reasons.append("MATCH_REQUIRES_REVIEW")
+
+        operator = (
+            self.session.get(User, document.uploaded_by)
+            if document.uploaded_by
+            else None
+        )
+        if operator is None or not operator.is_active:
+            reasons.append("ACTIVE_OPERATOR_MISSING")
+        elif not {
+            "stock.receive",
+            "receipts.confirm",
+        }.issubset(effective_permissions(self.session, operator)):
+            reasons.append("OPERATOR_PERMISSION_MISSING")
+
+        correlation_id = f"ai-auto-confirm:{job_id}"
+        if reasons:
+            self._record_auto_confirmation_result(
+                document=document,
+                draft=draft,
+                action="goods_receipt.auto_confirmation_skipped",
+                correlation_id=correlation_id,
+                reasons=reasons,
+            )
+            return GoodsReceiptService(
+                self.session,
+                self.settings,
+            ).get_by_document(document.organization_id, document.id)
+
+        assert operator is not None
+        try:
+            return GoodsReceiptService(self.session, self.settings).confirm(
+                user=operator,
+                draft_id=draft.id,
+                correlation_id=correlation_id,
+                confirmation_source="AI_AUTOMATIC",
+            )
+        except Exception as exc:
+            logger.exception(
+                "Az automatikus AI-bevételezés sikertelen: %s",
+                draft.id,
+            )
+            self.session.rollback()
+            refreshed_document = self.session.get(Document, document.id)
+            refreshed_draft = self.session.get(GoodsReceiptDraft, draft.id)
+            if refreshed_document is not None and refreshed_draft is not None:
+                self.session.add(
+                    ReviewTask(
+                        organization_id=refreshed_document.organization_id,
+                        task_type="GOODS_RECEIPT_REVIEW",
+                        entity_type="goods_receipt_draft",
+                        entity_id=refreshed_draft.id,
+                        reason_code="AUTO_CONFIRM_FAILED",
+                        context={
+                            "document_id": refreshed_document.id,
+                            "draft_id": refreshed_draft.id,
+                            "error": exc.__class__.__name__,
+                        },
+                    )
+                )
+                self._record_auto_confirmation_result(
+                    document=refreshed_document,
+                    draft=refreshed_draft,
+                    action="goods_receipt.auto_confirmation_failed",
+                    correlation_id=correlation_id,
+                    reasons=["AUTO_CONFIRM_FAILED"],
+                )
+            return GoodsReceiptService(
+                self.session,
+                self.settings,
+            ).get_by_document(document.organization_id, document.id)
+
+    def _record_auto_confirmation_result(
+        self,
+        *,
+        document: Document,
+        draft: GoodsReceiptDraft,
+        action: str,
+        correlation_id: str,
+        reasons: list[str],
+    ) -> None:
+        self.session.add(
+            AuditLog(
+                organization_id=document.organization_id,
+                actor_id=document.uploaded_by,
+                action=action,
+                entity_type="goods_receipt",
+                entity_id=draft.id,
+                correlation_id=correlation_id,
+                details={
+                    "document_id": document.id,
+                    "reasons": sorted(set(reasons)),
+                },
+            )
+        )
+        self.session.commit()
 
     def _ensure_circuit_closed(self, request: AiRequest) -> None:
         threshold = max(self.settings.ai_circuit_failure_threshold, 1)

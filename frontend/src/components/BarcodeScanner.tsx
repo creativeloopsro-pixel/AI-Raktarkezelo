@@ -183,6 +183,13 @@ export default function BarcodeScanner({ onDetected, disabled = false }: Props) 
 
   useEffect(() => stopCamera, [stopCamera]);
 
+  function submitManualCode() {
+    const normalized = manualCode.trim();
+    if (!normalized) return;
+    onDetected(normalized, "manual");
+    setManualCode("");
+  }
+
   return (
     <div className={`barcode-scanner ${cameraActive ? "active" : ""}`}>
       <div className="scanner-viewport">
@@ -219,15 +226,8 @@ export default function BarcodeScanner({ onDetected, disabled = false }: Props) 
         {cameraActive ? "Kamera leállítása" : "Kamera indítása"}
       </button>
 
-      <form
+      <div
         className="scanner-manual-entry"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const normalized = manualCode.trim();
-          if (!normalized) return;
-          onDetected(normalized, "manual");
-          setManualCode("");
-        }}
       >
         <Keyboard aria-hidden="true" />
         <label>
@@ -235,16 +235,26 @@ export default function BarcodeScanner({ onDetected, disabled = false }: Props) 
           <input
             value={manualCode}
             onChange={(event) => setManualCode(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                submitManualCode();
+              }
+            }}
             placeholder="Kód beírása vagy olvasó használata"
             inputMode="numeric"
             autoComplete="off"
             disabled={disabled}
           />
         </label>
-        <button type="submit" disabled={disabled || !manualCode.trim()}>
+        <button
+          type="button"
+          disabled={disabled || !manualCode.trim()}
+          onClick={submitManualCode}
+        >
           Keresés
         </button>
-      </form>
+      </div>
       {error && <p className="scanner-error">{error}</p>}
     </div>
   );
