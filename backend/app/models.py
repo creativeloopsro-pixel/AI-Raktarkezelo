@@ -1320,6 +1320,51 @@ class InventoryReportRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class BackupSchedule(Base):
+    __tablename__ = "backup_schedules"
+
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), primary_key=True
+    )
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    frequency: Mapped[str] = mapped_column(String(20), default="WEEKLY")
+    backup_time: Mapped[time] = mapped_column(Time, default=time(2, 0))
+    timezone: Mapped[str] = mapped_column(String(80), default="Europe/Bratislava")
+    weekly_day: Mapped[str] = mapped_column(String(16), default="SUNDAY")
+    monthly_rule: Mapped[str] = mapped_column(String(16), default="LAST_DAY")
+    next_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_status: Mapped[str] = mapped_column(String(24), default="NEVER")
+    last_error_message: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
+    last_object_key: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
+    last_filename: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    last_size_bytes: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+    last_sha256: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    updated_by: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
 class VrpImportBatch(Base):
     __tablename__ = "vrp_import_batches"
     __table_args__ = (

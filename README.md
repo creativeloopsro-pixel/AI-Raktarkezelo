@@ -1,15 +1,27 @@
-# AI Raktárkezelő
+# AI Skladové hospodárstvo
 
-Mobilról és laptopról használható, mozgásalapú készletkezelő rendszer. A
-megvalósítás forrása az ebben a könyvtárban található teljes PDF/DOCX műszaki
-architektúra.
+> **Projekt je vo vývoji.** Funkcie, rozhranie a integračné možnosti sa môžu
+> počas vývoja rozšíriť alebo zmeniť.
+
+Moderná webová aplikácia pre inteligentnú správu skladu, produktov a príjmu
+tovaru. Umožňuje skenovanie EAN kódov mobilným telefónom, evidenciu zásob a
+pohybov, spracovanie dodacích listov vo formáte PDF alebo fotografie pomocou
+AI a bezpečné automatizované zálohovanie.
+
+Systém je navrhnutý pre malé a stredné firmy, ktoré chcú mať presný prehľad o
+sklade bez zložitej manuálnej administratívy. Obsahuje správu používateľov a
+oprávnení, inventúry, spracovanie VRP predajných reportov, auditné záznamy,
+API tokeny, offline nahrávanie dokumentov a obnovenie dát zo zálohy.
+
+Lokálne spustenie: [http://localhost:8080](http://localhost:8080)
+
+Tento odkaz funguje iba na počítači, kde aplikácia beží. Pred nasadením pre
+zákazníkov je potrebné použiť vlastnú doménu a produkčný VPS alebo PaaS hosting.
 
 ## Aktuális verzió
 
-`0.15.1` - egyenként, kétlépcsős megerősítéssel törölhető dokumentumok és
-nulla készletű termékek. A törlés jogosultságvédett és auditált; feldolgozás alatt
-álló dokumentum, illetve készlettel rendelkező termék nem törölhető. A soronkénti
-törlés mobilnézetben is mindig elérhető.
+`0.17.1` - slovenský prezentačný popis projektu s označením, že aplikácia je
+vo vývoji.
 
 Az aktuális kiadás tartalmazza a felhasználói hitelesítést, terméktörzset,
 vonalkódokat, csomagolási egységeket, tranzakciós készletmozgásokat,

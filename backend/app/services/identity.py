@@ -59,6 +59,7 @@ PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("notifications.read", "Értesítések megtekintése", "system"),
     ("settings.read", "Beállítások megtekintése", "system"),
     ("settings.write", "Beállítások kezelése", "system"),
+    ("backups.restore", "Biztonsági mentés visszaállítása", "system"),
 )
 
 ALL_PERMISSION_CODES = frozenset(code for code, _, _ in PERMISSION_DEFINITIONS)

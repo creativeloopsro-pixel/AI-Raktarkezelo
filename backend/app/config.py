@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str = "admin@example.com"
     bootstrap_admin_password: str = "ChangeMe-2026!"
     max_upload_mb: int = 25
+    backup_restore_max_mb: int = Field(default=512, ge=1, le=4096)
+    backup_restore_max_uncompressed_mb: int = Field(default=2048, ge=1, le=16384)
+    backup_restore_max_entries: int = Field(default=20000, ge=10, le=200000)
     max_document_pages: int = 50
     object_store_backend: str = "local"
     object_store_local_path: str = "./data/objects"

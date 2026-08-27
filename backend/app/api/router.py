@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api import (
     ai_settings,
     auth,
+    backups,
     documents,
     email_intake,
     goods_receipts,
@@ -22,6 +23,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(system.router)
 api_router.include_router(auth.router)
 api_router.include_router(ai_settings.router)
+api_router.include_router(backups.router)
 api_router.include_router(identity.router)
 api_router.include_router(products.router)
 api_router.include_router(stock.router)

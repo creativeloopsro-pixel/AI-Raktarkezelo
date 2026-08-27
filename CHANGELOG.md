@@ -4,6 +4,67 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.17.1] - 2026-08-27
+
+### Dokumentáció
+
+- A README nyitó bemutatkozása szlovák nyelven készült el, és egyértelműen
+  jelzi, hogy az alkalmazás még fejlesztés alatt áll.
+- A leírás összefoglalja a készlet-, EAN-, AI-dokumentumfeldolgozási,
+  jogosultsági, leltározási és biztonsági mentési képességeket, valamint a
+  helyi elérési címet és az éles telepítés követelményét.
+
+## [0.17.0] - 2026-07-29
+
+### Hozzáadva
+
+- A korábban letöltött AI Raktár ZIP-mentések feltöltése és visszaállítása a
+  Beállítások biztonsági mentési paneljéről.
+- Külön `backups.restore` jogosultság, interaktív munkamenet-követelmény,
+  figyelmeztetés, jelölőnégyzet és begépelendő `VISSZAÁLLÍTÁS` megerősítés.
+- A visszaállítás előtt automatikusan elkészülő, továbbra is letölthető
+  biztonsági pillanatkép az aktuális állapotról.
+- Visszaállítási összegzés a feldolgozott táblák, rekordok és fájlok számával.
+
+### Biztonság és megbízhatóság
+
+- A ZIP formátuma, szervezeti azonosítója, manifestje, rekorddarabszámai,
+  bejegyzésszáma, tömörített és kicsomagolt mérete, fájlútvonalai és tömörítési
+  aránya visszaállítás előtt ellenőrzésre kerül.
+- Az üzleti rekordok tranzakcióban cserélődnek, a fájlok először elkülönített
+  objektumkulcsokra kerülnek; adatbázishiba esetén a félkész objektumok törlődnek.
+- A felhasználók, jelszavak, szerepkörök, jogosultságok, MFA-adatok,
+  helyreállító kódok, munkamenetek, API-tokenek, AI API-kulcsok, valamint titkos
+  e-mail- és pluginbeállítások nem kerülnek felülírásra.
+- A visszaállítás API-tokenből nem hívható, másik szervezet mentése nem tölthető
+  vissza, és minden sikeres művelet auditnapló-bejegyzést hoz létre.
+
+## [0.16.0] - 2026-07-29
+
+### Hozzáadva
+
+- Szervezetenkénti, kézzel bármikor elkészíthető ZIP biztonsági mentés az
+  üzleti adatokról, feltöltött dokumentumokról és VRP-fájlokról.
+- Napi, heti vagy havi, időzónahelyes automatikus mentési ütemezés
+  választható időponttal, heti nappal és havi szabállyal.
+- Közvetlen mentésletöltés a Beállítások oldalról, fájlméret-, időpont-,
+  állapot- és SHA-256 ellenőrzőösszeg-visszajelzéssel.
+- Szervezeti mentési API, Dramatiq worker-integráció és PostgreSQL
+  Alembic-migráció.
+- Archiválási, felülírási, titokredakciós és letöltési regressziós tesztek.
+
+### Biztonság és megbízhatóság
+
+- Minden szervezet pontosan egy `latest.zip` objektumot tart fenn; csak a
+  sikeresen elkészült új mentés írja felül a korábbi fájlt.
+- Sikertelen új mentés után az előző sikeres archívum továbbra is letölthető.
+- A letölthető mentés nem tartalmaz jelszó-hash-t, MFA-helyreállító kódot,
+  munkamenet- vagy API-token-hash-t, illetve titkos API-kulcsot.
+- A ZIP szervezetazonosítóval szűrt logikai exportot, manifestet és auditált
+  generálási eseményt tartalmaz; más szervezet adata nem kerülhet bele.
+- Párhuzamos kézi mentés blokkolt, elakadt automatikus futást a scheduler
+  hibás állapotba helyez, a következő futási idő pedig előre kiszámított.
+
 ## [0.15.1] - 2026-07-26
 
 ### Javítva

@@ -6887,6 +6887,126 @@ button:disabled {
   gap: 0.65rem;
 }
 
+.backup-restore-zone {
+  display: grid;
+  border-top: 1px solid rgb(166 63 63 / 24%);
+  grid-template-columns: minmax(14rem, 0.72fr) minmax(20rem, 1.28fr);
+  gap: 1rem 2rem;
+  padding: 1.35rem 1.25rem;
+  background: rgb(166 63 63 / 4%);
+}
+
+.backup-restore-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.backup-restore-heading > svg {
+  width: 1.2rem;
+  flex: 0 0 auto;
+  color: var(--danger);
+}
+
+.backup-restore-heading strong,
+.backup-restore-heading small {
+  display: block;
+}
+
+.backup-restore-heading strong {
+  color: var(--danger);
+  font-size: 0.78rem;
+}
+
+.backup-restore-heading small {
+  margin-top: 0.28rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+.backup-restore-file,
+.backup-restore-confirmation {
+  display: grid;
+  grid-column: 2;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+}
+
+.backup-restore-file input,
+.backup-restore-confirmation input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.58rem;
+  outline: 0;
+  padding: 0.55rem 0.75rem;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.74rem;
+}
+
+.backup-restore-file input:focus,
+.backup-restore-confirmation input:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgb(166 63 63 / 10%);
+}
+
+.backup-restore-file small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.backup-restore-preserved {
+  display: grid;
+  grid-column: 2;
+  gap: 0.22rem;
+  border-left: 3px solid var(--success);
+  padding: 0.5rem 0.75rem;
+  color: var(--muted);
+  background: rgb(47 118 97 / 5%);
+  font-size: 0.67rem;
+  line-height: 1.45;
+}
+
+.backup-restore-preserved strong {
+  color: var(--success);
+}
+
+.backup-restore-check {
+  display: flex;
+  grid-column: 2;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--ink);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.backup-restore-check input {
+  margin-top: 0.18rem;
+  accent-color: var(--danger);
+}
+
+.backup-restore-actions {
+  display: flex;
+  grid-column: 2;
+  justify-content: flex-end;
+}
+
+.backup-restore-actions .danger-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.backup-restore-actions svg {
+  width: 1rem;
+}
+
 .report-settings-readonly {
   display: flex;
   border-top: 1px solid var(--line);
@@ -6972,6 +7092,19 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .backup-restore-zone {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-restore-file,
+  .backup-restore-preserved,
+  .backup-restore-check,
+  .backup-restore-confirmation,
+  .backup-restore-zone .report-schedule-feedback,
+  .backup-restore-actions {
+    grid-column: 1;
+  }
+
   .report-schedule-fields,
   .report-schedule-feedback,
   .report-schedule-actions {
@@ -7055,6 +7188,10 @@ button:disabled {
     padding: 1rem 0.85rem;
   }
 
+  .backup-restore-zone {
+    padding: 1rem 0.85rem;
+  }
+
   .report-schedule-fields {
     grid-template-columns: 1fr;
   }
@@ -7066,6 +7203,15 @@ button:disabled {
   .report-schedule-actions .secondary-button,
   .report-schedule-actions .primary-button {
     width: 100%;
+  }
+
+  .backup-restore-actions {
+    display: grid;
+  }
+
+  .backup-restore-actions .danger-button {
+    width: 100%;
+    justify-content: center;
   }
 
   .ai-connection-status {

@@ -4,6 +4,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   CloudUpload,
+  DatabaseBackup,
   FileSpreadsheet,
   Mail,
   Puzzle,
@@ -17,6 +18,7 @@ import {
 import type { Session } from "../types";
 import { APP_VERSION } from "../version";
 import AiSettingsPanel from "./AiSettingsPanel";
+import BackupSettingsPanel from "./BackupSettingsPanel";
 import InventoryReportSettingsPanel from "./InventoryReportSettingsPanel";
 
 export type SettingsTarget =
@@ -26,6 +28,7 @@ export type SettingsTarget =
   | "email"
   | "plugins"
   | "reports"
+  | "backups"
   | "documents";
 
 type Props = {
@@ -86,6 +89,16 @@ export default function SettingsPage({
   }, [focusReports]);
 
   const cards: SettingsCard[] = [
+      {
+        target: "backups",
+        eyebrow: "Adatvédelem és helyreállítás",
+        title: "Biztonsági mentés",
+        description:
+          "Kézi vagy automatikus napi, heti és havi ZIP-mentés közvetlen letöltéssel.",
+        action: "Mentési beállítások",
+        icon: DatabaseBackup,
+        visible: can("settings.read")
+      },
       {
         target: "reports",
         eyebrow: "Automatikus jelentések",
@@ -225,6 +238,12 @@ export default function SettingsPage({
                 key={card.target}
                 className="settings-card"
                 onClick={() => {
+                  if (card.target === "backups") {
+                    document
+                      .getElementById("backup-settings")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    return;
+                  }
                   if (card.target === "reports") {
                     document
                       .getElementById("inventory-report-settings")
@@ -258,6 +277,15 @@ export default function SettingsPage({
             canWrite={can("settings.write") && can("reports.generate")}
             canGenerate={can("reports.generate")}
             onOpenDocuments={() => onNavigate("documents")}
+          />
+        </div>
+      ) : null}
+
+      {can("settings.read") ? (
+        <div id="backup-settings" className="settings-anchor-section">
+          <BackupSettingsPanel
+            canWrite={can("settings.write")}
+            canRestore={can("backups.restore")}
           />
         </div>
       ) : null}

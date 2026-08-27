@@ -1,6 +1,9 @@
 import type {
   AiSettings,
   ApiTokenItem,
+  BackupRestoreResult,
+  BackupSchedule,
+  BackupScheduleUpdate,
   CreatedApiToken,
   DocumentItem,
   EmailInboundSettings,
@@ -566,6 +569,78 @@ export function generateInventoryReport(): Promise<DocumentItem> {
   return request<DocumentItem>("/reports/inventory/generate", {
     method: "POST"
   });
+}
+
+export function getBackupSchedule(): Promise<BackupSchedule> {
+  return request<BackupSchedule>("/backups/schedule");
+}
+
+export function updateBackupSchedule(
+  payload: BackupScheduleUpdate
+): Promise<BackupSchedule> {
+  return request<BackupSchedule>("/backups/schedule", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
+
+export function generateBackup(): Promise<BackupSchedule> {
+  return request<BackupSchedule>("/backups/generate", {
+    method: "POST"
+  });
+}
+
+export function restoreBackup(file: File): Promise<BackupRestoreResult> {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("confirmation", "RESTORE");
+  return request<BackupRestoreResult>("/backups/restore", {
+    method: "POST",
+    body
+  });
+}
+
+export async function downloadBackup(): Promise<void> {
+  let session = readSession();
+  if (!session) throw new ApiError("A munkamenet lejárt.", 401);
+
+  const execute = (currentSession: Session) =>
+    fetch("/api/v1/backups/download", {
+      headers: {
+        Authorization: `Bearer ${currentSession.access_token}`,
+        "X-Correlation-ID": crypto.randomUUID()
+      }
+    });
+
+  let response = await execute(session);
+  if (response.status === 401) {
+    try {
+      session = await refreshAccessToken(session.refresh_token);
+      response = await execute(session);
+    } catch {
+      clearSession();
+      window.dispatchEvent(new Event("session-expired"));
+      throw new ApiError("A munkamenet lejárt.", 401);
+    }
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as
+      | { detail?: { message?: string } }
+      | null;
+    throw new ApiError(
+      payload?.detail?.message ?? "A biztonsági mentés letöltése sikertelen.",
+      response.status
+    );
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  const url = URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = match?.[1] ?? "ai-raktar-biztonsagi-mentes.zip";
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export function getAiSettings(): Promise<AiSettings> {

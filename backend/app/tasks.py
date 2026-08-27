@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.database import SessionLocal
 from app.email_imap import poll_imap_once
 from app.models import (
+    BackupSchedule,
     Document,
     DocumentProcessingJob,
     InventoryReportRun,
@@ -24,6 +25,7 @@ from app.models import (
     utc_now,
 )
 from app.services.ai_processing import DocumentAiPipeline
+from app.services.backups import BackupBusyError, BackupService
 from app.services.inventory_reports import InventoryReportService
 from app.services.plugin_runtime import PluginRuntime
 from app.services.vrp_imports import (
@@ -144,10 +146,34 @@ def process_inventory_report_run(run_id: str) -> None:
         InventoryReportService(session).process_run(run_id)
 
 
+@dramatiq.actor(max_retries=0, time_limit=900_000)
+def process_organization_backup(organization_id: str) -> None:
+    with SessionLocal() as session:
+        schedule = session.get(BackupSchedule, organization_id)
+        if schedule is None:
+            return
+        try:
+            BackupService(session).generate(
+                organization_id=organization_id,
+                actor_id=schedule.updated_by,
+                correlation_id=f"backup-schedule:{uuid4()}",
+                scheduled=True,
+            )
+        except BackupBusyError:
+            session.rollback()
+        except Exception:
+            session.rollback()
+            logger.exception(
+                "Az automatikus biztonsági mentés sikertelen: %s",
+                organization_id,
+            )
+
+
 @dramatiq.actor(max_retries=3, min_backoff=5000)
 def run_vrp_scheduler() -> None:
     now = utc_now()
     stale_before = now - timedelta(minutes=10)
+    due_backup_organization_ids: list[str] = []
     with SessionLocal.begin() as session:
         stale_batches = session.scalars(
             select(VrpImportBatch)
@@ -267,6 +293,42 @@ def run_vrp_scheduler() -> None:
                 monthly_rule=report_schedule.monthly_rule,
                 after=now,
             )
+
+        stale_backup_schedules = session.scalars(
+            select(BackupSchedule)
+            .where(
+                BackupSchedule.last_status.in_(("QUEUED", "PROCESSING")),
+                BackupSchedule.updated_at < stale_before,
+            )
+            .with_for_update(skip_locked=True)
+        )
+        for backup_schedule in stale_backup_schedules:
+            backup_schedule.last_status = "FAILED"
+            backup_schedule.last_error_message = (
+                "A biztonsági mentés nem fejeződött be; a következő futás "
+                "a beállított ütemezés szerint történik."
+            )
+
+        due_backup_schedules = session.scalars(
+            select(BackupSchedule)
+            .where(
+                BackupSchedule.enabled.is_(True),
+                BackupSchedule.next_run_at <= now,
+            )
+            .with_for_update(skip_locked=True)
+        )
+        for backup_schedule in due_backup_schedules:
+            due_backup_organization_ids.append(backup_schedule.organization_id)
+            backup_schedule.last_status = "QUEUED"
+            backup_schedule.last_error_message = None
+            backup_schedule.next_run_at = calculate_next_run(
+                frequency=backup_schedule.frequency,
+                processing_time=backup_schedule.backup_time,
+                timezone_name=backup_schedule.timezone,
+                weekly_day=backup_schedule.weekly_day,
+                monthly_rule=backup_schedule.monthly_rule,
+                after=now,
+            )
         session.flush()
         pending_report_run_ids = list(
             session.scalars(
@@ -282,6 +344,8 @@ def run_vrp_scheduler() -> None:
 
     for report_run_id in pending_report_run_ids:
         process_inventory_report_run.send(report_run_id)
+    for organization_id in due_backup_organization_ids:
+        process_organization_backup.send(organization_id)
     run_vrp_scheduler.send_with_options(
         delay=max(settings.vrp_scheduler_poll_seconds, 1) * 1000
     )

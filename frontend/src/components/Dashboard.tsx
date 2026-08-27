@@ -471,7 +471,7 @@ export default function Dashboard({
               onNavigate={(target) => {
                 if (target === "reports") {
                   navigateTo("settings", { settingsReports: true });
-                } else {
+                } else if (target !== "backups") {
                   navigateTo(target);
                 }
               }}

@@ -486,6 +486,49 @@ export type InventoryReportScheduleUpdate = Pick<
   | "monthly_rule"
 >;
 
+export type BackupSchedule = {
+  organization_id: string;
+  enabled: boolean;
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY";
+  backup_time: string;
+  timezone: string;
+  weekly_day: string;
+  monthly_rule: string;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  last_status: "NEVER" | "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  last_error_message: string | null;
+  last_filename: string | null;
+  last_size_bytes: number | null;
+  last_sha256: string | null;
+  backup_available: boolean;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BackupScheduleUpdate = Pick<
+  BackupSchedule,
+  | "enabled"
+  | "frequency"
+  | "backup_time"
+  | "timezone"
+  | "weekly_day"
+  | "monthly_rule"
+>;
+
+export type BackupRestoreResult = {
+  restored_at: string;
+  source_filename: string;
+  source_generated_at: string;
+  source_sha256: string;
+  restored_tables: number;
+  restored_rows: number;
+  restored_files: number;
+  safety_backup_created_at: string;
+  preserved_security_data: string[];
+};
+
 export type EmailInboundSettings = {
   organization_id: string;
   inbound_address: string;

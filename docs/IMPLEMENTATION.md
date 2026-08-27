@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.15.1 hatókör
+## 0.17.1 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait
@@ -36,10 +36,22 @@ A kiadás a kritikus és magas UX-kockázatokat is lezárja: valódi URL-útvona
 ötcélú mobil navigációt, összevont dokumentummunkateret, kereshető és
 mobilbarát jogosultságszerkesztést, kötelezőmező-validációt, valamint
 készletkönyvelés előtti AI-összegzést és teljes bevételezés-visszavonást ad.
+Az üzemeltetési réteg szervezetenként egyetlen, letölthető ZIP biztonsági
+mentést tart fenn. A mentés kézzel indítható vagy napi, heti, illetve havi
+rendben automatikusan futtatható. Az új sikeres archívum felülírja a korábbit,
+a biztonsági hitelesítő adatok és titkos integrációs értékek pedig szándékosan
+kimaradnak a felhasználó által letölthető exportból.
+A letöltött ZIP adminisztrátori, interaktív munkamenetből visszaállítható.
+A művelet formátum-, szervezet-, méret-, útvonal- és tömörítési ellenőrzést
+végez, majd tranzakciósan lecseréli az üzleti adatokat és új objektumkulcsokra
+állítja vissza a fájlokat. A jelenlegi identitás-, hitelesítési és titkos
+integrációs adatok megmaradnak, a művelet előtt pedig automatikus biztonsági
+pillanatkép készül.
 
 | Architektúra-terület | Megvalósítás |
 | --- | --- |
 | Beállítási központ | Önálló, reszponzív, jogosultság alapján szűrt fiók-, biztonsági és modulnavigáció |
+| Biztonsági mentés | Kézi és napi/heti/havi automatikus, szervezetenként felülírt ZIP, manifest, SHA-256, közvetlen letöltés és megerősített visszaállítás |
 | AI hitelesítő adat | Szervezetszintű, titkosított Ollama API-kulcs, maszkolt állapot, auditált csere és törlés |
 | Identity | Szervezethez kötött felhasználó, egyedi és rendszer-szerepkörök, finom engedélyek |
 | MFA | Adminisztrátori TOTP, egyszer használható helyreállító kódok és MFA-val védett munkamenet |
