@@ -1,6 +1,6 @@
 # Megvalósítási térkép
 
-## 0.17.2 hatókör
+## 0.17.3 hatókör
 
 Ez a kiadás az architektúra 23. fejezetének első fázisát és a második fázis
 felületi alapjait, valamint a harmadik fázis dokumentumbeérkeztetési alapjait

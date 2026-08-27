@@ -27,6 +27,22 @@ Tento odkaz funguje iba na počítači, kde aplikácia beží. Pred nasadením p
 - **Zálohy a obnova:** manuálne aj automatické denné, týždenné alebo mesačné ZIP zálohy. Najnovšia úspešná záloha je stiahnuteľná a pri obnove sa neprepíšu heslá, API kľúče ani bezpečnostné údaje.
 - **Audit a vratné operácie:** všetky dôležité skladové pohyby, importy a bezpečnostné operácie sú auditované; import možno zrušiť vytvorením kontrolovaných proti-pohybov.
 
+## Použité programovacie jazyky a technológie
+
+- **Python 3.12+** – backendové API, obchodná logika, AI integrácie,
+  spracovanie dokumentov, background workery, testy a databázové migrácie
+  (FastAPI, SQLAlchemy, Alembic, Dramatiq).
+- **TypeScript a TSX** – webové používateľské rozhranie v Reacte, PWA funkcie,
+  obrazovky správy skladu, kamerové skenovanie čiarových kódov a komunikácia s API.
+- **JavaScript** – nástroje a konfigurácia frontendu vo Vite prostredí.
+- **HTML a CSS** – štruktúra a štýly používateľského rozhrania; na konzistentný
+  responzívny dizajn sa používa aj Tailwind CSS.
+- **SQL** – databázová vrstva je navrhnutá pre PostgreSQL a podporuje SQLite pri
+  lokálnom vývoji; schéma a migrácie sa riadia cez SQLAlchemy a Alembic.
+- **YAML a JSON** – deklaratívna konfigurácia Docker Compose, build nástrojov,
+  závislostí a nasadenia. Nejde o aplikačné programovacie jazyky, ale sú
+  súčasťou prevádzkovej konfigurácie projektu.
+
 ## Ako funguje automatický príjem
 
 1. Pracovník odfotí dodací list alebo nahrá PDF.
