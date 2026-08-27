@@ -4,6 +4,13 @@ A projekt minden kiadása a [Semantic Versioning](https://semver.org/) szabálya
 követi. A fejlesztés alapdokumentuma az
 `AI_Raktarkezelo_Teljes_Architektura.pdf` és annak DOCX-változata.
 
+## [0.17.2] - 2026-08-27
+
+### Dokumentáció
+
+- Celý súbor README bol preložený do slovenčiny, vrátane opisu funkcií,
+  prevádzky, vývojového prostredia, bezpečnosti a rozšírených modulov.
+
 ## [0.17.1] - 2026-08-27
 
 ### Dokumentáció
